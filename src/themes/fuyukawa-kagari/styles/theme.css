@@ -5620,6 +5620,14 @@ html[data-yuimi-performance="lite"] #waifu.is-summoned {
     gap: 10px;
     padding: 10px 12px 16px;
     min-height: 0;
+    top: -120px;
+  }
+
+  /* 移动端禁用 hover/focus 显隐，只由 JS 的 .is-nav-shown 控制（避免点按后 focus 残留钉住） */
+  .site-header:hover,
+  .site-header:focus-within,
+  .site-header.is-nav-pinned {
+    top: -120px;
   }
 
   .site-header.is-nav-shown {
@@ -5655,7 +5663,7 @@ html[data-yuimi-performance="lite"] #waifu.is-summoned {
   .toy-dock {
     top: 148px;
     width: 388px;
-    transform: translateX(-372px);
+    transform: translateX(-388px);
     z-index: 20;
   }
 
@@ -5679,14 +5687,29 @@ html[data-yuimi-performance="lite"] #waifu.is-summoned {
   }
 
   .nav-links a {
-    flex: 0 1 auto;
+    flex: 0 0 auto;
     min-width: 0;
-    grid-template-columns: auto;
-    column-gap: 0;
+    grid-template-columns: auto auto;
+    column-gap: 5px;
     row-gap: 0;
-    min-height: 40px;
-    padding: 6px 10px;
-    font-size: 0.82rem;
+    min-height: 38px;
+    padding: 5px 10px 5px 7px;
+    font-size: 0.78rem;
+  }
+
+  .nav-links a .nav-icon {
+    grid-row: 1 / span 2;
+    width: 24px;
+    height: 24px;
+  }
+
+  .nav-links a .nav-icon svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .nav-links a .nav-label {
+    font-size: 0.72rem;
   }
 
   .nav-links a .nav-hint {

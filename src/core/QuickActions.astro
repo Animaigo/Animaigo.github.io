@@ -97,8 +97,10 @@ const { themeTarget, themeLabel } = Astro.props;
           return;
         }
 
-        // 其余位置（把手、胶囊本体、胶囊里的空隙）都是开关：
-        // 点一下展开并保持，再点一下收起。桌面 / 触屏同一套。
+        // 只有点把手本身才开关；点胶囊里的空隙不触发。
+        if (!target?.closest("[data-quick-actions-handle]")) return;
+
+        // 把手：点一下展开并保持，再点一下收起。桌面 / 触屏同一套。
         event.preventDefault();
         const wasPinned = group.classList.contains("is-pinned");
         group.classList.toggle("is-pinned", !wasPinned);

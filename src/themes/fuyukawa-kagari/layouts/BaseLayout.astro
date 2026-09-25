@@ -101,20 +101,6 @@ const themedNotFoundRedirectScript = `(() => {
         <span>TOOLS</span>
       </button>
       <div class="toy-dock-panel">
-        <section class="toy-widget live2d-control-widget" aria-label="Live2D 看板娘控制">
-          <div class="toy-widget-title">
-            <span>✦</span>
-            <strong>Live2D 控制台</strong>
-          </div>
-          <p class="live2d-status" data-live2d-status>看板娘已卸载，正在物色新形态。</p>
-          <div class="live2d-controls">
-            <button type="button" data-live2d-toggle disabled>隐藏看板娘</button>
-            <button type="button" data-live2d-message disabled>说句话</button>
-            <button type="button" data-live2d-model disabled>换模型</button>
-            <button type="button" data-live2d-texture disabled>换衣服</button>
-          </div>
-        </section>
-
         <section class="toy-widget music-widget" aria-label="音乐播放器">
           <div class="toy-widget-title">
             <span>♫</span>
@@ -363,10 +349,12 @@ const themedNotFoundRedirectScript = `(() => {
         toyDock.classList.remove("is-pinned");
         toyDock.querySelector(":focus")?.blur();
       });
-      // 移动端无 hover：页面滚动或触摸滑动时，收起非钉住的抽屉。
+      // 移动端无 hover：页面滚动或触摸滑动时，收起抽屉（移除 is-pinned 真正收回）。
       const collapseToyDockOnScroll = () => {
         const toyDock = getToyDock();
-        if (!toyDock || toyDock.classList.contains("is-pinned")) return;
+        if (!toyDock) return;
+        if (!toyDock.classList.contains("is-pinned")) return;
+        toyDock.classList.remove("is-pinned");
         toyDock.querySelector(":focus")?.blur();
       };
       window.addEventListener("scroll", collapseToyDockOnScroll, { passive: true });
