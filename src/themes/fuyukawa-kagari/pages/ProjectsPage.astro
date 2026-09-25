@@ -6,16 +6,12 @@ const projects = projectEntries;
 ---
 
 <BaseLayout title="Projects | Mikan KenkyuuSho" description="Mikan KenkyuuSho 的长期收藏桌与随手做的小东西。">
-  <section class="works-shell" aria-labelledby="works-title">
-    <div class="works-hero">
-      <div>
-        <p class="section-kicker">Works README</p>
-        <h1 id="works-title">Projects</h1>
-        <p>
-          这里不是严肃作品集，更像一张会慢慢更新的收藏桌。长短不一的卡片拼成一面墙，点开任意一张能看到状态、技术栈和入口。
-        </p>
-      </div>
-    </div>
+  <section class="page-title" aria-labelledby="works-title">
+    <p class="section-kicker">Works README</p>
+    <h1 id="works-title">Projects</h1>
+    <p>
+      这里不是严肃作品集，更像一张会慢慢更新的收藏桌。长短不一的卡片拼成一面墙，点开任意一张能看到状态、技术栈和入口。
+    </p>
   </section>
 
   {
@@ -48,11 +44,9 @@ const projects = projectEntries;
           </>
         )
       : (
-          <section class="works-shell">
-            <p class="works-empty">
-              这里还在等第一张卡片。往 <code>src/core/data/projects.ts</code> 里加一条，它就会出现在这面墙上。
-            </p>
-          </section>
+          <p class="works-empty">
+            这里还在等第一张卡片。往 <code>src/core/data/projects.ts</code> 里加一条，它就会出现在这面墙上。
+          </p>
         )
   }
 </BaseLayout>
@@ -223,6 +217,16 @@ const projects = projectEntries;
 </script>
 
 <style>
+  .works-empty {
+    width: min(1160px, calc(100% - 32px));
+    margin: 0 auto;
+    padding: 34px;
+    color: var(--ink-soft);
+    font-size: 1rem;
+    line-height: 1.7;
+    text-align: center;
+  }
+
   .works-empty code {
     color: var(--ink);
     font-family: "Cascadia Code", "Fira Code", Consolas, monospace;
