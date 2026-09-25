@@ -1463,8 +1463,6 @@ const fallingTags = [
 
     const siteHeader = document.querySelector(".site-header");
     const homeContentBg = document.querySelector(".home-content-bg");
-    // 触屏设备（手机/平板）导航栏由 BaseLayout 的滚动方向逻辑统一控制，这里直接跳过以避免每次滚动的强制重排。
-    const coarsePointer = window.matchMedia("(pointer: coarse)");
     let navPinFrame = 0;
     const syncNavPin = () => {
       navPinFrame = 0;
@@ -1473,13 +1471,12 @@ const fallingTags = [
       siteHeader.classList.toggle("is-nav-pinned", homeContentBg.getBoundingClientRect().top <= 60);
     };
     const scheduleNavPin = () => {
-      if (coarsePointer.matches) return;
       if (navPinFrame) return;
       navPinFrame = window.requestAnimationFrame(syncNavPin);
     };
 
     if (siteHeader && homeContentBg) {
-      if (!coarsePointer.matches) syncNavPin();
+      syncNavPin();
       window.addEventListener("scroll", scheduleNavPin, { passive: true });
       window.addEventListener("resize", scheduleNavPin);
       window.addEventListener("pageshow", scheduleNavPin);

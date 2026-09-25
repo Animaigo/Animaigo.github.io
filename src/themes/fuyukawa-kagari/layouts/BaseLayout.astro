@@ -190,9 +190,6 @@ const themedNotFoundRedirectScript = `(() => {
           }
         </nav>
       </header>
-      <button class="nav-dock" type="button" data-nav-dock aria-label="展开导航栏" title="展开导航栏">
-        <span aria-hidden="true"></span>
-      </button>
       <main>
         {
           backTarget && (
@@ -371,57 +368,18 @@ const themedNotFoundRedirectScript = `(() => {
 
       // 顶部导航栏显隐：
       // - 桌面端：CSS :hover 显示（见 theme.css），JS 不干预。
-      // - 手机端：滚到接近页面底部时出现；隐藏态点顶部小圆条唤起；下滑或点别处收起。
+      // - 手机端：常态上抬隐藏（只露 ::before 圆条）；点圆条唤起显示；滚到内容区顶部时
+      //   由首页 syncNavPin 加 is-nav-pinned 常驻；切换页面后回到常态隐藏。
       const navHeader = document.querySelector(".site-header");
       const navCoarse = window.matchMedia("(pointer: coarse)");
-      let navLastY = window.scrollY;
-      let navFrame = 0;
-      const nearBottom = () => {
-        const scrollable = document.documentElement.scrollHeight - window.innerHeight;
-        return window.scrollY >= scrollable - window.innerHeight * 0.9;
-      };
       const showNav = () => navHeader?.classList.add("is-nav-shown");
       const hideNav = () => navHeader?.classList.remove("is-nav-shown");
-      const syncNavVisibility = () => {
-        navFrame = 0;
-        if (!navHeader || !navCoarse.matches) return;
-        const y = window.scrollY;
-        // 向下滚动超过阈值 → 收起（覆盖"滚到底部出现"与"点圆条唤起"的显示态）
-        if (y > navLastY + 6) {
-          hideNav();
-        } else if (nearBottom()) {
-          // 接近底部 → 显示
-          showNav();
-        }
-        navLastY = y;
-      };
-      const scheduleNavVisibility = () => {
-        if (navFrame) return;
-        navFrame = window.requestAnimationFrame(syncNavVisibility);
-      };
-      if (navHeader) {
-        syncNavVisibility();
-        window.addEventListener("scroll", scheduleNavVisibility, { passive: true });
-        window.addEventListener("resize", scheduleNavVisibility);
-        // 点页面其他地方（非导航栏、非小圆条）→ 收起
-        document.addEventListener("pointerdown", (event) => {
-          if (!navCoarse.matches) return;
-          const target = event.target instanceof Element ? event.target : null;
-          if (!navHeader?.contains(target) && !target?.closest("[data-nav-dock]")) hideNav();
-        });
-        // 小圆条点按 → 唤起导航
-        document.querySelector("[data-nav-dock]")?.addEventListener("click", () => {
-          if (navCoarse.matches) showNav();
-        });
-        // 路由切换后重置滚动基准并重新计算，避免导航栏状态错乱
-        document.addEventListener("astro:page-load", () => {
-          navLastY = window.scrollY;
-          scheduleNavVisibility();
-        });
-        document.addEventListener("astro:after-swap", () => {
-          navLastY = window.scrollY;
-          scheduleNavVisibility();
-        });
+      if (navHeader && navCoarse.matches) {
+        // 点导航栏（隐藏态露出的小圆条，或显示态）→ 显示；点链接会跳转，切页后由下方逻辑隐藏。
+        navHeader.addEventListener("pointerdown", showNav);
+        // 切换页面后回到常态隐藏（新页面顶部）
+        document.addEventListener("astro:page-load", hideNav);
+        document.addEventListener("astro:after-swap", hideNav);
       }
 
       // ===== Live2D 看板娘：已卸载（2026-09-25 起停用，代码保留可恢复）=====

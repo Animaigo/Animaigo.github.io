@@ -1688,11 +1688,6 @@ html[data-color-mode="dark"] .quick-action--mode {
   transform: translateX(-50%);
 }
 
-/* 顶部边缘小圆条：导航栏隐藏时，手机端点按它唤起导航（桌面端不显示） */
-.nav-dock {
-  display: none;
-}
-
 .site-header:hover::before,
 .site-header:focus-within::before {
   background: rgba(159, 200, 235, 0.52);
@@ -5620,50 +5615,25 @@ html[data-yuimi-performance="lite"] #waifu.is-summoned {
 
 @media (max-width: 940px) {
   .site-header {
-    /* 移动端导航栏默认收起在屏幕外，由 JS 控制（滚到底部附近 / 点小圆条 显示） */
+    /* 移动端导航栏默认上抬到屏幕外，只露出底部 ::before 小圆条（可点按唤起） */
     grid-template-columns: 1fr;
     justify-items: center;
     gap: 10px;
     padding: 10px 12px 16px;
     min-height: 0;
-    top: -120px;
+    top: -78px;
   }
 
-  /* 移动端禁用 hover/focus 显隐，只由 JS 的 .is-nav-shown 控制 */
+  /* 移动端禁用 hover/focus 显隐（避免点按后 focus 残留钉住），显隐只由 JS 控制 */
   .site-header:hover,
-  .site-header:focus-within,
-  .site-header.is-nav-pinned {
-    top: -120px;
+  .site-header:focus-within {
+    top: -78px;
   }
 
+  /* 常驻：滚到内容区顶部时钉在顶部，之后不再因滑动隐藏 */
+  .site-header.is-nav-pinned,
   .site-header.is-nav-shown {
     top: 0;
-  }
-
-  /* 顶部边缘小圆条：常驻，点按唤起导航 */
-  .nav-dock {
-    display: grid;
-    position: fixed;
-    top: 6px;
-    left: 50%;
-    z-index: 25;
-    width: 56px;
-    height: 8px;
-    place-items: center;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    transform: translateX(-50%);
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .nav-dock span {
-    width: 44px;
-    height: 6px;
-    border-radius: 999px;
-    background: rgba(215, 130, 156, 0.72);
-    box-shadow: 0 2px 8px rgba(215, 130, 156, 0.28);
   }
 
   .has-page-surface main {
