@@ -228,6 +228,12 @@ const themedNotFoundRedirectScript = `(() => {
     <script>
       let pigScrollTimer = 0;
       let pigScrollFrame = 0;
+      let pigTrackHeight = 0;
+
+      const measurePigTrackHeight = () => {
+        const track = document.querySelector("[data-pig-scrollbar] .pig-scrollbar-track");
+        pigTrackHeight = track?.getBoundingClientRect().height ?? 0;
+      };
 
       const updatePigScrollbar = () => {
         const pigScrollbar = document.querySelector("[data-pig-scrollbar]");
@@ -235,9 +241,8 @@ const themedNotFoundRedirectScript = `(() => {
 
         const scrollable = document.documentElement.scrollHeight - window.innerHeight;
         const progress = scrollable > 0 ? window.scrollY / scrollable : 0;
-        const track = pigScrollbar.querySelector(".pig-scrollbar-track");
-        const trackHeight = track?.getBoundingClientRect().height ?? 0;
-        const pigY = 20 + progress * trackHeight;
+        if (!pigTrackHeight) measurePigTrackHeight();
+        const pigY = 20 + progress * pigTrackHeight;
         pigScrollbar.style.setProperty("--scroll-progress", `${Math.min(1, Math.max(0, progress))}`);
         pigScrollbar.style.setProperty("--scroll-percent", `${Math.min(1, Math.max(0, progress)) * 100}%`);
         pigScrollbar.style.setProperty("--pig-y", `${pigY}px`);
@@ -258,7 +263,10 @@ const themedNotFoundRedirectScript = `(() => {
 
       schedulePigScrollbar();
       window.addEventListener("scroll", schedulePigScrollbar, { passive: true });
-      window.addEventListener("resize", schedulePigScrollbar);
+      window.addEventListener("resize", () => {
+        pigTrackHeight = 0;
+        schedulePigScrollbar();
+      });
       document.addEventListener("astro:page-load", schedulePigScrollbar);
       document.addEventListener("astro:after-swap", schedulePigScrollbar);
       window.addEventListener("pageshow", schedulePigScrollbar);
@@ -355,6 +363,14 @@ const themedNotFoundRedirectScript = `(() => {
         toyDock.classList.remove("is-pinned");
         toyDock.querySelector(":focus")?.blur();
       });
+      // 移动端无 hover：页面滚动或触摸滑动时，收起非钉住的抽屉。
+      const collapseToyDockOnScroll = () => {
+        const toyDock = getToyDock();
+        if (!toyDock || toyDock.classList.contains("is-pinned")) return;
+        toyDock.querySelector(":focus")?.blur();
+      };
+      window.addEventListener("scroll", collapseToyDockOnScroll, { passive: true });
+      window.addEventListener("touchmove", collapseToyDockOnScroll, { passive: true });
       window.addEventListener("keydown", (event) => {
         const toyDock = getToyDock();
         if (event.key !== "Escape" || !toyDock) return;

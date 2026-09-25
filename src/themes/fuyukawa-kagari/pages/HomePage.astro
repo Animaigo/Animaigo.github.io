@@ -324,11 +324,21 @@ const fallingTags = [
         }
       };
 
+      const stopNoticeTouch = (event) => {
+        if (!backdrop.classList.contains("is-open")) return;
+        event.stopPropagation();
+        if (!scrollArea.contains(event.target)) {
+          event.preventDefault();
+        }
+      };
+
       trigger.addEventListener("click", openNotice);
       closeButton.addEventListener("click", closeNotice);
       scrollArea.addEventListener("scroll", updateNoticeScrollbar, { passive: true });
       modal.addEventListener("wheel", stopNoticeWheel, { passive: false });
       backdrop.addEventListener("wheel", stopNoticeWheel, { passive: false });
+      modal.addEventListener("touchmove", stopNoticeTouch, { passive: false });
+      backdrop.addEventListener("touchmove", stopNoticeTouch, { passive: false });
       window.addEventListener("resize", updateNoticeScrollbar);
       const onBackdropClick = (event) => {
         if (event.target === backdrop) closeNotice();
@@ -344,6 +354,8 @@ const fallingTags = [
         scrollArea.removeEventListener("scroll", updateNoticeScrollbar);
         modal.removeEventListener("wheel", stopNoticeWheel);
         backdrop.removeEventListener("wheel", stopNoticeWheel);
+        modal.removeEventListener("touchmove", stopNoticeTouch);
+        backdrop.removeEventListener("touchmove", stopNoticeTouch);
         window.removeEventListener("resize", updateNoticeScrollbar);
         backdrop.removeEventListener("click", onBackdropClick);
         document.removeEventListener("keydown", onNoticeKeydown);

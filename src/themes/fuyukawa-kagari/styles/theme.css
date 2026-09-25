@@ -75,6 +75,7 @@
 
 * {
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
 html {
@@ -213,6 +214,8 @@ img {
   height: 42px;
   pointer-events: auto;
   transform: translateY(-50%);
+  transition: top 90ms linear;
+  will-change: top;
 }
 
 .pig-scrollbar-pig::after {
@@ -1821,6 +1824,8 @@ html[data-color-mode="dark"] .quick-action--mode {
 .hero-stage {
   position: relative;
   height: 100vh;
+  height: 100svh;
+  height: 100dvh;
   background:
     linear-gradient(180deg, rgba(246, 250, 255, 0.1), rgba(245, 238, 230, 0.05) 44%, rgba(255, 248, 236, 0.02)),
     url("/themes/fuyukawa-kagari/assets/hero-wallpaper.webp") center bottom / cover no-repeat;
@@ -1987,7 +1992,10 @@ html[data-color-mode="dark"] .quick-action--mode {
   align-items: center;
   justify-content: center;
   height: 100vh;
+  height: 100svh;
+  height: 100dvh;
   min-height: 100vh;
+  min-height: 100svh;
   overflow: hidden;
   padding: 120px 24px 86px;
   background:
@@ -5690,7 +5698,12 @@ html[data-yuimi-performance="lite"] #waifu.is-summoned {
 
   .hero {
     min-height: 100vh;
-    padding-top: 150px;
+    min-height: 100svh;
+    min-height: 100dvh;
+    height: 100svh;
+    height: 100dvh;
+    padding-top: 96px;
+    padding-bottom: 72px;
     background-position: 58% center;
   }
 
