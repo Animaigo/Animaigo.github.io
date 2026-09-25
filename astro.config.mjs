@@ -84,9 +84,9 @@ const pagefindIntegration = () => ({
 });
 
 export default defineConfig({
-  // 正式域名。GitHub Pages 作为承载（仓库 Animaigo.github.io），自定义域名在
-  // 仓库 Settings → Pages → Custom domain 里绑定，无需 public/CNAME（Actions 部署会忽略它）。
-  site: "https://mikankenkyuusho.com",
+  // 站点跑在 GitHub Pages 组织页仓库 mikankenkyuusho/mikankenkyuusho.github.io 上，
+  // 根路径直出，因此不需要 base。将来绑定自定义域名时只改这一行。
+  site: "https://mikankenkyuusho.github.io",
   output: "static",
   prefetch: {
     prefetchAll: false,
