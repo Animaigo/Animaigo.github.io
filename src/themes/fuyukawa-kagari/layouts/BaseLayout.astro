@@ -101,17 +101,17 @@ const themedNotFoundRedirectScript = `(() => {
         <span>TOOLS</span>
       </button>
       <div class="toy-dock-panel">
-        <section class="toy-widget live2d-control-widget" aria-label="Live2D 看板娘控制" hidden>
+        <section class="toy-widget live2d-control-widget" aria-label="Live2D 看板娘控制">
           <div class="toy-widget-title">
             <span>✦</span>
             <strong>Live2D 控制台</strong>
           </div>
-          <p class="live2d-status" data-live2d-status>正在唤醒看板娘...</p>
+          <p class="live2d-status" data-live2d-status>看板娘已卸载，正在物色新形态。</p>
           <div class="live2d-controls">
-            <button type="button" data-live2d-toggle>隐藏看板娘</button>
-            <button type="button" data-live2d-message>说句话</button>
-            <button type="button" data-live2d-model>换模型</button>
-            <button type="button" data-live2d-texture>换衣服</button>
+            <button type="button" data-live2d-toggle disabled>隐藏看板娘</button>
+            <button type="button" data-live2d-message disabled>说句话</button>
+            <button type="button" data-live2d-model disabled>换模型</button>
+            <button type="button" data-live2d-texture disabled>换衣服</button>
           </div>
         </section>
 
@@ -378,6 +378,42 @@ const themedNotFoundRedirectScript = `(() => {
         toyDock.querySelector(":focus")?.blur();
       });
 
+      // 触屏设备（手机/平板）导航栏：下滑出现、上滑隐藏、滚回顶部常显。
+      const navHeader = document.querySelector(".site-header");
+      const navCoarse = window.matchMedia("(pointer: coarse)");
+      let navLastY = window.scrollY;
+      let navFrame = 0;
+      const syncNavVisibility = () => {
+        navFrame = 0;
+        if (!navHeader) return;
+        if (!navCoarse.matches) {
+          // 桌面端：保持默认 hover/focus 显隐，不干预。
+          navHeader.classList.remove("is-nav-shown");
+          return;
+        }
+        const y = window.scrollY;
+        if (y <= 8) {
+          navHeader.classList.add("is-nav-shown");
+        } else if (y < navLastY - 4) {
+          navHeader.classList.add("is-nav-shown");
+        } else if (y > navLastY + 4) {
+          navHeader.classList.remove("is-nav-shown");
+        }
+        navLastY = y;
+      };
+      const scheduleNavVisibility = () => {
+        if (navFrame) return;
+        navFrame = window.requestAnimationFrame(syncNavVisibility);
+      };
+      if (navHeader) {
+        syncNavVisibility();
+        window.addEventListener("scroll", scheduleNavVisibility, { passive: true });
+        window.addEventListener("resize", scheduleNavVisibility);
+      }
+
+      // ===== Live2D 看板娘：已卸载（2026-09-25 起停用，代码保留可恢复）=====
+      // 如需恢复：删除下方开头的「/*」与结尾的「*/」两处标记即可。
+      /*
       const live2dBase = "https://fastly.jsdelivr.net/npm/live2d-widgets@1.0.0-rc.6/dist/";
       const live2dStatus = document.querySelector("[data-live2d-status]");
       const live2dToggle = document.querySelector("[data-live2d-toggle]");
@@ -773,6 +809,8 @@ const themedNotFoundRedirectScript = `(() => {
         if (!isHomeRoute()) return;
         hardReloadLive2d();
       });
+      */
+      // ===== Live2D 看板娘卸载结束 =====
 
       const musicCacheKey = "yuimi-radio-state-v1";
       const musicAutoplayKey = "yuimi-radio-autoplay-v1";

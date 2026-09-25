@@ -5614,21 +5614,25 @@ html[data-yuimi-performance="lite"] #waifu.is-summoned {
 
 @media (max-width: 940px) {
   .site-header {
-    position: fixed;
-    top: 0;
+    /* 移动端导航栏不常驻：默认收起在屏幕外，由 JS 按滚动方向显隐 */
     grid-template-columns: 1fr;
     justify-items: center;
-    gap: 12px;
-    padding: 12px 14px;
+    gap: 10px;
+    padding: 10px 12px 16px;
+    min-height: 0;
+  }
+
+  .site-header.is-nav-shown {
+    top: 0;
   }
 
   .has-page-surface main {
-    padding-top: 84px;
+    padding-top: 0;
   }
 
   .back-bar {
     position: fixed;
-    top: 88px;
+    top: 14px;
     left: 14px;
     z-index: 21;
     width: auto;
@@ -5649,9 +5653,10 @@ html[data-yuimi-performance="lite"] #waifu.is-summoned {
   }
 
   .toy-dock {
-    top: 112px;
+    top: 148px;
     width: 388px;
-    transform: translateX(-364px);
+    transform: translateX(-372px);
+    z-index: 20;
   }
 
   .toy-dock:hover,
@@ -5660,11 +5665,13 @@ html[data-yuimi-performance="lite"] #waifu.is-summoned {
   }
 
   .nav-links {
-    width: min(100%, 520px);
-    justify-content: flex-start;
-    overflow-x: auto;
-    max-width: calc(100vw - 24px);
-    scrollbar-width: none;
+    width: 100%;
+    justify-content: center;
+    gap: 5px;
+    padding: 6px;
+    max-width: calc(100vw - 20px);
+    overflow-x: visible;
+    flex-wrap: nowrap;
   }
 
   .nav-links::-webkit-scrollbar {
@@ -5672,7 +5679,18 @@ html[data-yuimi-performance="lite"] #waifu.is-summoned {
   }
 
   .nav-links a {
-    flex: 0 0 auto;
+    flex: 0 1 auto;
+    min-width: 0;
+    grid-template-columns: auto;
+    column-gap: 0;
+    row-gap: 0;
+    min-height: 40px;
+    padding: 6px 10px;
+    font-size: 0.82rem;
+  }
+
+  .nav-links a .nav-hint {
+    display: none;
   }
 
   .section-grid,
