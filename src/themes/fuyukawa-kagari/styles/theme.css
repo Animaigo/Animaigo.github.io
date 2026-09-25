@@ -1659,7 +1659,8 @@ html[data-color-mode="dark"] .quick-action--mode {
 }
 
 .site-header:hover,
-.site-header:focus-within {
+.site-header:focus-within,
+.site-header.is-nav-shown {
   top: 0;
 }
 
@@ -1685,6 +1686,11 @@ html[data-color-mode="dark"] .quick-action--mode {
     0 0 0 4px rgba(255, 255, 255, 0.36),
     0 8px 18px rgba(215, 130, 156, 0.18);
   transform: translateX(-50%);
+}
+
+/* 顶部边缘小圆条：导航栏隐藏时，手机端点按它唤起导航（桌面端不显示） */
+.nav-dock {
+  display: none;
 }
 
 .site-header:hover::before,
@@ -5614,7 +5620,7 @@ html[data-yuimi-performance="lite"] #waifu.is-summoned {
 
 @media (max-width: 940px) {
   .site-header {
-    /* 移动端导航栏不常驻：默认收起在屏幕外，由 JS 按滚动方向显隐 */
+    /* 移动端导航栏默认收起在屏幕外，由 JS 控制（滚到底部附近 / 点小圆条 显示） */
     grid-template-columns: 1fr;
     justify-items: center;
     gap: 10px;
@@ -5623,7 +5629,7 @@ html[data-yuimi-performance="lite"] #waifu.is-summoned {
     top: -120px;
   }
 
-  /* 移动端禁用 hover/focus 显隐，只由 JS 的 .is-nav-shown 控制（避免点按后 focus 残留钉住） */
+  /* 移动端禁用 hover/focus 显隐，只由 JS 的 .is-nav-shown 控制 */
   .site-header:hover,
   .site-header:focus-within,
   .site-header.is-nav-pinned {
@@ -5632,6 +5638,32 @@ html[data-yuimi-performance="lite"] #waifu.is-summoned {
 
   .site-header.is-nav-shown {
     top: 0;
+  }
+
+  /* 顶部边缘小圆条：常驻，点按唤起导航 */
+  .nav-dock {
+    display: grid;
+    position: fixed;
+    top: 6px;
+    left: 50%;
+    z-index: 25;
+    width: 56px;
+    height: 8px;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    transform: translateX(-50%);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .nav-dock span {
+    width: 44px;
+    height: 6px;
+    border-radius: 999px;
+    background: rgba(215, 130, 156, 0.72);
+    box-shadow: 0 2px 8px rgba(215, 130, 156, 0.28);
   }
 
   .has-page-surface main {
@@ -5661,9 +5693,6 @@ html[data-yuimi-performance="lite"] #waifu.is-summoned {
   }
 
   .toy-dock {
-    top: 148px;
-    width: 388px;
-    transform: translateX(-388px);
     z-index: 20;
   }
 
@@ -5692,13 +5721,15 @@ html[data-yuimi-performance="lite"] #waifu.is-summoned {
     grid-template-columns: auto auto;
     column-gap: 5px;
     row-gap: 0;
+    align-items: center;
     min-height: 38px;
     padding: 5px 10px 5px 7px;
     font-size: 0.78rem;
   }
 
   .nav-links a .nav-icon {
-    grid-row: 1 / span 2;
+    grid-row: auto;
+    grid-column: 1;
     width: 24px;
     height: 24px;
   }
@@ -5709,6 +5740,8 @@ html[data-yuimi-performance="lite"] #waifu.is-summoned {
   }
 
   .nav-links a .nav-label {
+    grid-column: 2;
+    grid-row: auto;
     font-size: 0.72rem;
   }
 
@@ -5954,7 +5987,7 @@ html[data-yuimi-performance="lite"] #waifu.is-summoned {
   .toy-dock {
     top: 102px;
     width: calc(100vw - 46px);
-    transform: translateX(calc(-100vw + 88px));
+    transform: translateX(calc(-100vw + 54px));
   }
 
   .toy-dock:hover,
