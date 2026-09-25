@@ -139,7 +139,9 @@ npm run build
 
 构建产物位于 `dist/`。GitHub Pages 工作流位于 `.github/workflows/deploy.yml`：推送到 `main` 或手动触发后，工作流会使用 Node.js 24 执行 `npm ci`、`npm run build`，并部署 `dist/`。
 
-站点地址和静态输出配置可在 `astro.config.mjs` 中调整。若将站点发布到普通项目页而不是 `<username>.github.io` 仓库，请同步检查 Astro 的 `base` 配置和静态资源路径。
+站点部署在 GitHub Pages 用户主页仓库 `Animaigo/Animaigo.github.io`，线上地址 `https://animaigo.github.io/`（根路径，`astro.config.mjs` 的 `site` 已指向它，无需 `base`）。改完内容后 `git push` 即自动重新构建部署。若日后改到普通项目页（地址带 `/仓库名/` 尾巴）或绑定自定义域名，再同步检查 `site` 与 `base` 配置。
+
+> 根目录的 `edgeone.json` 是早前 EdgeOne Pages 部署留下的缓存规则，**在当前 GitHub Pages 部署下不生效**，仅作为历史配置保留；若日后迁回 EdgeOne 可继续使用。
 
 ## 目录说明
 
