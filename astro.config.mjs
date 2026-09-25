@@ -84,7 +84,7 @@ const pagefindIntegration = () => ({
 });
 
 export default defineConfig({
-  // 站点跑在 GitHub Pages 组织页仓库 mikankenkyuusho/mikankenkyuusho.github.io 上，
+  // 站点跑在 GitHub Pages 用户主页仓库 Animaigo/Animaigo.github.io 上，
   // 根路径直出，因此不需要 base。将来绑定自定义域名时只改这一行。
   site: "https://animaigo.github.io",
   output: "static",
