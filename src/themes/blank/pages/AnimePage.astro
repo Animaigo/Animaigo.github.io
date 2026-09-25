@@ -1,0 +1,45 @@
+---
+import BlankLayout from "../layouts/BlankLayout.astro";
+import { bangumiDisplayName, bangumiItems, bangumiStatusLabel } from "@/core/data/bangumi";
+
+const statusOrder = ["watching", "completed", "wish", "onhold", "dropped"] as const;
+const groups = statusOrder
+  .map((status) => ({ status, items: bangumiItems.filter((item) => item.status === status) }))
+  .filter((group) => group.items.length > 0);
+---
+
+<BlankLayout title="Anime | Mikan KenkyuuSho Blank" description="Mikan KenkyuuSho 的 Bangumi 追番记录。">
+  <header class="blank-page-head">
+    <div>
+      <p class="blank-kicker">Bangumi / plain list</p>
+      <h1 class="blank-anime-title">Anime</h1>
+      <p>共 {bangumiItems.length} 部，来自 Bangumi 收藏。</p>
+    </div>
+    <span class="blank-page-index">AN</span>
+  </header>
+
+  {
+    bangumiItems.length > 0 ? (
+      groups.map((group) => (
+        <section class="blank-section">
+          <div class="blank-section-title">
+            <h2>{bangumiStatusLabel[group.status]}</h2>
+            <span class="blank-label">{group.items.length} 部</span>
+          </div>
+          <p class="blank-anime-inline">
+            {group.items.map((item, index) => (
+              <>
+                {index > 0 && <span aria-hidden="true">·</span>}
+                <a href={item.url} target="_blank" rel="noreferrer">{bangumiDisplayName(item)}</a>
+              </>
+            ))}
+          </p>
+        </section>
+      ))
+    ) : (
+      <section class="blank-section">
+        <p class="blank-empty">还没有同步 Bangumi 数据。</p>
+      </section>
+    )
+  }
+</BlankLayout>

@@ -1,0 +1,270 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import {
+  bangumiData,
+  bangumiDisplayName,
+  bangumiItems,
+  bangumiStatusLabel,
+  bangumiWatching
+} from "@/core/data/bangumi";
+
+const otherStatusOrder = ["completed", "wish", "onhold", "dropped"] as const;
+const otherGroups = otherStatusOrder
+  .map((status) => ({ status, items: bangumiItems.filter((item) => item.status === status) }))
+  .filter((group) => group.items.length > 0);
+const updatedLabel = bangumiData.updatedAt
+  ? new Date(bangumiData.updatedAt).toLocaleDateString("zh-CN")
+  : "尚未同步";
+---
+
+<BaseLayout title="Anime | Mikan KenkyuuSho" description="Mikan KenkyuuSho 的 Bangumi 追番记录。">
+  <section class="page-title anime-hero">
+    <p class="section-kicker">Bangumi collection</p>
+    <h1 transition:name="anime-title">Anime</h1>
+    <p>
+      共 {bangumiItems.length} 部，更新于 {updatedLabel}。在看的部分放了封面，其余按状态列成清单。
+    </p>
+  </section>
+
+  <div class="anime-shell">
+    {
+      bangumiWatching.length > 0 && (
+        <section class="anime-block" aria-labelledby="anime-watching">
+          <div class="anime-block-head">
+            <h2 id="anime-watching">在看</h2>
+            <span>{bangumiWatching.length} 部</span>
+          </div>
+          <div class="anime-grid">
+            {bangumiWatching.map((item) => (
+              <a class="anime-card" href={item.url} target="_blank" rel="noreferrer">
+                {item.cover ? (
+                  <img src={item.cover} alt={`${bangumiDisplayName(item)} 封面`} loading="lazy" />
+                ) : (
+                  <span class="anime-card-blank" aria-hidden="true">NO COVER</span>
+                )}
+                <span class="anime-card-copy">
+                  <strong>{bangumiDisplayName(item)}</strong>
+                  <span>
+                    {item.progress > 0
+                      ? `${item.progress}${item.total ? ` / ${item.total}` : ""} 话`
+                      : "尚未记录进度"}
+                  </span>
+                </span>
+              </a>
+            ))}
+          </div>
+        </section>
+      )
+    }
+
+    {
+      otherGroups.map((group) => (
+        <section class="anime-block" aria-label={bangumiStatusLabel[group.status]}>
+          <div class="anime-block-head">
+            <h2>{bangumiStatusLabel[group.status]}</h2>
+            <span>{group.items.length} 部</span>
+          </div>
+          <p class="anime-inline">
+            {group.items.map((item, index) => (
+              <>
+                {index > 0 && <span class="anime-inline-sep" aria-hidden="true">·</span>}
+                <a href={item.url} target="_blank" rel="noreferrer">{bangumiDisplayName(item)}</a>
+              </>
+            ))}
+          </p>
+        </section>
+      ))
+    }
+
+    {
+      bangumiItems.length === 0 && (
+        <section class="anime-block anime-block--empty">
+          <h2>还没有同步</h2>
+          <p>
+            在终端运行 <code>npm run sync:bangumi -- &lt;你的UID&gt;</code> 之后，这里会显示你的 Bangumi 追番记录。
+          </p>
+        </section>
+      )
+    }
+  </div>
+</BaseLayout>
+
+<style>
+  .anime-hero {
+    max-width: none;
+  }
+
+  .anime-shell {
+    display: grid;
+    gap: 18px;
+    width: min(1160px, calc(100% - 32px));
+    margin: 24px auto 72px;
+  }
+
+  .anime-block {
+    position: relative;
+    padding: 24px;
+    border: 2px solid var(--glass-line);
+    border-radius: 8px;
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 226, 234, 0.05) 44%, rgba(220, 238, 250, 0.08)),
+      rgba(255, 252, 246, 0.18);
+    box-shadow:
+      inset 0 0 0 1px var(--glass-edge),
+      var(--glass-shadow);
+    backdrop-filter: blur(2px) saturate(1.03);
+    -webkit-backdrop-filter: blur(2px) saturate(1.03);
+  }
+
+  .anime-block::before {
+    position: absolute;
+    top: -9px;
+    right: 24px;
+    width: 86px;
+    height: 22px;
+    content: "";
+    background:
+      repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.54) 0 4px, transparent 4px 8px),
+      rgba(255, 222, 139, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.58);
+    border-radius: 999px;
+    box-shadow: 0 8px 16px rgba(91, 110, 139, 0.12);
+    transform: rotate(-4deg);
+  }
+
+  .anime-block-head {
+    display: flex;
+    gap: 16px;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .anime-block-head h2 {
+    margin: 0;
+    color: var(--ink);
+    font-size: clamp(1.25rem, 3vw, 1.6rem);
+  }
+
+  .anime-block-head span {
+    color: var(--ink-soft);
+    font-family: "Cascadia Code", "Fira Code", Consolas, monospace;
+    font-size: 0.78rem;
+  }
+
+  .anime-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 16px;
+  }
+
+  .anime-card {
+    display: grid;
+    gap: 9px;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .anime-card img,
+  .anime-card-blank {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    background: var(--paper-soft);
+    border: 2px solid rgba(255, 255, 255, 0.7);
+    border-radius: 8px;
+    box-shadow: 0 12px 24px rgba(67, 82, 106, 0.14);
+  }
+
+  .anime-card img {
+    object-fit: cover;
+    transition:
+      transform 180ms ease,
+      box-shadow 180ms ease;
+  }
+
+  .anime-card-blank {
+    color: var(--ink-soft);
+    font-family: "Cascadia Code", "Fira Code", Consolas, monospace;
+    font-size: 0.7rem;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .anime-card:hover img {
+      transform: translateY(-3px);
+      box-shadow: 0 16px 30px rgba(67, 82, 106, 0.2);
+    }
+  }
+
+  .anime-card-copy {
+    display: grid;
+    gap: 3px;
+  }
+
+  .anime-card-copy strong {
+    color: var(--ink);
+    font-size: 0.96rem;
+    line-height: 1.35;
+  }
+
+  .anime-card-copy > span {
+    color: var(--ink-soft);
+    font-size: 0.78rem;
+  }
+
+  .anime-card-copy small {
+    color: rgba(101, 116, 145, 0.86);
+    font-size: 0.72rem;
+  }
+
+  .anime-inline {
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 0.92rem;
+    line-height: 2.05;
+    word-break: break-word;
+  }
+
+  .anime-inline a {
+    color: var(--ink);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+  }
+
+  .anime-inline a:hover,
+  .anime-inline a:focus-visible {
+    color: #d7829c;
+    border-bottom-color: currentColor;
+  }
+
+  .anime-inline-sep {
+    margin: 0 6px;
+    color: rgba(101, 116, 145, 0.55);
+  }
+
+  .anime-block--empty h2 {
+    margin: 0 0 8px;
+    color: var(--ink);
+    font-size: 1.2rem;
+  }
+
+  .anime-block--empty p {
+    margin: 0;
+    color: var(--ink-soft);
+  }
+
+  .anime-block--empty code {
+    padding: 2px 6px;
+    background: rgba(255, 255, 255, 0.62);
+    border-radius: 4px;
+    font-family: "Cascadia Code", "Fira Code", Consolas, monospace;
+    font-size: 0.85em;
+  }
+
+  @media (max-width: 520px) {
+    .anime-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+</style>

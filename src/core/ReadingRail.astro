@@ -1,0 +1,188 @@
+---
+interface Props {
+  /** 要监视的文章容器选择器 */
+  target?: string;
+}
+
+const { target = "[data-reader-article]" } = Astro.props;
+---
+
+<div class="reader-top-progress" aria-hidden="true">
+  <span data-reader-top-fill></span>
+</div>
+
+<aside class="reader-rail" data-reader-rail data-reader-target={target} aria-label="阅读进度">
+  <div class="reader-bars" data-reader-bars></div>
+  <span class="reader-hover" data-reader-hover aria-hidden="true">
+    <span class="reader-hover-label" data-reader-hover-label></span>
+  </span>
+</aside>
+
+<script>
+  (() => {
+    const rail = document.querySelector("[data-reader-rail]");
+    const barsHost = document.querySelector("[data-reader-bars]");
+    const hover = document.querySelector("[data-reader-hover]");
+    const hoverLabel = document.querySelector("[data-reader-hover-label]");
+    const topFill = document.querySelector("[data-reader-top-fill]");
+    if (!rail || !barsHost) return;
+
+    const article = document.querySelector(rail.dataset.readerTarget || "[data-reader-article]");
+    if (!article) return;
+
+    const clamp01 = (value) => Math.min(1, Math.max(0, value));
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const tickCount = 12; // 没有章节的长文用固定根数表示进度
+
+    // Astro 的客户端路由换页后会再执行一次这段脚本，先把上一个实例摘掉
+    window.__mikanReadingRailCleanup?.();
+
+    let marks = [];
+    let frame = 0;
+
+    const documentTop = (element) => element.getBoundingClientRect().top + window.scrollY;
+
+    const createBars = () => {
+      const fragment = document.createDocumentFragment();
+
+      if (marks.length > 1) {
+        marks.forEach((mark) => {
+          const bar = document.createElement("span");
+          bar.className = `reader-bar reader-bar--h${mark.depth}`;
+          fragment.append(bar);
+          mark.bar = bar;
+        });
+        return fragment;
+      }
+
+      for (let index = 0; index < tickCount; index += 1) {
+        const bar = document.createElement("span");
+        bar.className = "reader-bar reader-bar--tick";
+        fragment.append(bar);
+      }
+
+      return fragment;
+    };
+
+    // 放在文章栏左边的空档里，不压到正文
+    const place = () => {
+      const rect = article.getBoundingClientRect();
+      const left = Math.max(64, Math.round(rect.left - 48));
+
+      rail.style.setProperty("--reader-rail-left", `${left}px`);
+    };
+
+    const measure = () => {
+      const articleTop = documentTop(article);
+      const height = article.offsetHeight || 1;
+
+      marks = Array.from(article.querySelectorAll("h1, h2, h3"))
+        .map((element) => {
+          const docTop = documentTop(element);
+          return {
+            element,
+            depth: Math.min(3, Math.max(1, Number(element.tagName.slice(1)) || 2)),
+            text: (element.textContent || "").trim(),
+            docTop,
+            ratio: clamp01((docTop - articleTop) / height),
+            bar: null
+          };
+        })
+        .filter((mark) => mark.text);
+
+      barsHost.replaceChildren(createBars());
+      place();
+      schedule();
+    };
+
+    const update = () => {
+      frame = 0;
+      const rect = article.getBoundingClientRect();
+      const scrollable = rect.height - window.innerHeight;
+      const progress = scrollable > 0 ? clamp01(-rect.top / scrollable) : 1;
+
+      if (topFill) topFill.style.width = `${progress * 100}%`;
+
+      if (marks.length > 1) {
+        let index = 0;
+
+        marks.forEach((mark, position) => {
+          if (mark.docTop - window.scrollY <= 120) index = position;
+        });
+
+        marks.forEach((mark, position) => {
+          mark.bar?.classList.toggle("is-current", position === index);
+        });
+        return;
+      }
+
+      const lit = Math.round(progress * tickCount);
+      Array.from(barsHost.children).forEach((bar, position) => {
+        bar.classList.toggle("is-current", position < lit);
+      });
+    };
+
+    const schedule = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(update);
+    };
+
+    const nearestMark = (ratio) => {
+      let best = marks[0] ?? null;
+      let bestGap = best ? Math.abs(best.ratio - ratio) : 1;
+
+      marks.forEach((mark) => {
+        const gap = Math.abs(mark.ratio - ratio);
+        if (gap < bestGap) {
+          best = mark;
+          bestGap = gap;
+        }
+      });
+
+      return best;
+    };
+
+    const showHover = (clientY) => {
+      const rect = rail.getBoundingClientRect();
+      const y = Math.min(Math.max(clientY - rect.top, 0), rect.height);
+      const mark = nearestMark(rect.height ? y / rect.height : 0);
+
+      rail.classList.add("is-hovering");
+      if (hover) hover.style.transform = `translateY(${y}px)`;
+      if (hoverLabel && mark) hoverLabel.textContent = mark.text;
+    };
+
+    rail.addEventListener("pointerenter", (event) => showHover(event.clientY));
+    rail.addEventListener("pointermove", (event) => showHover(event.clientY));
+    rail.addEventListener("pointerleave", () => rail.classList.remove("is-hovering"));
+    rail.addEventListener("pointercancel", () => rail.classList.remove("is-hovering"));
+
+    // 点横条 = 跳到最近的那个标题
+    rail.addEventListener("click", (event) => {
+      const rect = rail.getBoundingClientRect();
+      const mark = nearestMark(clamp01((event.clientY - rect.top) / (rect.height || 1)));
+      if (!mark) return;
+
+      mark.element.scrollIntoView({
+        behavior: reduceMotion.matches ? "auto" : "smooth",
+        block: "start"
+      });
+    });
+
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", measure);
+    window.addEventListener("load", measure);
+    document.fonts?.ready.then(measure).catch(() => {});
+
+    window.__mikanReadingRailCleanup = () => {
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("load", measure);
+      if (frame) window.cancelAnimationFrame(frame);
+      frame = 0;
+    };
+
+    measure();
+    update();
+  })();
+</script>

@@ -1,0 +1,154 @@
+---
+import { Icon } from "astro-icon/components";
+
+interface Props {
+  themeTarget: string;
+  themeLabel: string;
+}
+
+const { themeTarget, themeLabel } = Astro.props;
+---
+
+<div class="quick-actions" data-quick-actions>
+  <div class="quick-actions-menu" data-quick-actions-menu>
+    <button
+      class="quick-action quick-action--mode"
+      type="button"
+      data-color-mode-toggle
+      aria-pressed="false"
+      aria-label="切换到深色模式"
+      title="切换到深色模式"
+    >
+      <Icon name="tabler:moon" class="quick-action-icon quick-action-icon--moon" aria-hidden="true" />
+      <Icon name="tabler:sun" class="quick-action-icon quick-action-icon--sun" aria-hidden="true" />
+    </button>
+    <button
+      class="quick-action quick-action--theme"
+      type="button"
+      data-theme-select={themeTarget}
+      aria-label={themeLabel}
+      title={themeLabel}
+    >
+      <Icon name="tabler:palette" aria-hidden="true" />
+    </button>
+  </div>
+  <button
+    class="quick-action quick-actions-handle"
+    type="button"
+    data-quick-actions-handle
+    aria-expanded="false"
+    aria-label="更多快捷操作"
+    title="更多快捷操作"
+  >
+    <Icon name="tabler:dots-vertical" aria-hidden="true" />
+  </button>
+</div>
+
+<script is:inline data-astro-rerun>
+  (() => {
+    const sync = () => {
+      document.querySelectorAll("[data-quick-actions]").forEach((group) => {
+        group
+          .querySelector("[data-quick-actions-handle]")
+          ?.setAttribute("aria-expanded", String(group.classList.contains("is-pinned")));
+      });
+    };
+
+    if (!window.__mikanQuickActions) {
+      window.__mikanQuickActions = true;
+
+      const closePinned = (except) => {
+        document.querySelectorAll("[data-quick-actions].is-pinned").forEach((group) => {
+          if (group === except) return;
+          group.classList.remove("is-pinned");
+        });
+        sync();
+      };
+
+      const collapse = (group) => {
+        group.classList.remove("is-pinned");
+        // 指针可能还停在模块上，加一个抑制态压过 :hover，等指针移开再撤掉
+        group.classList.add("is-collapsed");
+        // 收起时清掉鼠标点击残留的焦点（键盘焦点 :focus-visible 保留，不影响 Tab 操作）
+        const focused = group.querySelector(":focus");
+        if (focused instanceof HTMLElement && !focused.matches(":focus-visible")) focused.blur();
+        sync();
+      };
+
+      const touchOnly = window.matchMedia("(hover: none)");
+
+      document.addEventListener("click", (event) => {
+        const target = event.target instanceof Element ? event.target : null;
+        const group = target?.closest("[data-quick-actions]");
+
+        // 点模块外面：全部收起
+        if (!group) {
+          closePinned(null);
+          document.querySelectorAll("[data-quick-actions].is-collapsed").forEach((item) => {
+            item.classList.remove("is-collapsed");
+            delete item.dataset.quickActionsLeft;
+          });
+          return;
+        }
+
+        // 点月亮 / 调色板：交给它们自己的逻辑，这一下不算开关
+        if (target?.closest("[data-color-mode-toggle], [data-theme-select]")) {
+          if (touchOnly.matches) collapse(group);
+          return;
+        }
+
+        // 其余位置（把手、胶囊本体、胶囊里的空隙）都是开关：
+        // 点一下展开并保持，再点一下收起。桌面 / 触屏同一套。
+        event.preventDefault();
+        const wasPinned = group.classList.contains("is-pinned");
+        group.classList.toggle("is-pinned", !wasPinned);
+        group.classList.toggle("is-collapsed", wasPinned);
+        if (wasPinned) {
+          const focused = group.querySelector(":focus");
+          if (focused instanceof HTMLElement && !focused.matches(":focus-visible")) focused.blur();
+        }
+        sync();
+      });
+
+      // 指针离开模块时只记一个标记：
+      // · 不取消 is-pinned —— 用户点开就是要它固定住（移开也保持横式），再点一下才收起；
+      // · 不撤 is-collapsed —— 收起抑制态要等指针真的离开过、再重新进来时才撤（见下面的 pointerover），
+      //   否则「点一下收起」之后指针稍微一动，胶囊又会被 hover 撑开。
+      // 另外：胶囊用 clip-path 收缩时底会从光标下面被裁掉，浏览器会补发一次 pointerout，
+      // 所以这里用坐标判断指针是不是真的出去了，不能只看这条事件。
+      document.addEventListener("pointerout", (event) => {
+        const target = event.target instanceof Element ? event.target : null;
+        const group = target?.closest("[data-quick-actions]");
+        if (!group) return;
+
+        const rect = group.getBoundingClientRect();
+        const inside = event.clientX >= rect.left
+          && event.clientX <= rect.right
+          && event.clientY >= rect.top
+          && event.clientY <= rect.bottom;
+        if (inside) return;
+
+        group.dataset.quickActionsLeft = "1";
+        sync();
+      });
+
+      // 指针重新进入模块：这时才撤掉抑制态，让 hover 能再把它展开
+      document.addEventListener("pointerover", (event) => {
+        const target = event.target instanceof Element ? event.target : null;
+        const group = target?.closest("[data-quick-actions]");
+        if (!group || !group.dataset.quickActionsLeft) return;
+
+        delete group.dataset.quickActionsLeft;
+        group.classList.remove("is-collapsed");
+        sync();
+      });
+
+      window.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") closePinned(null);
+      });
+    }
+
+    sync();
+    document.addEventListener("astro:page-load", sync);
+  })();
+</script>

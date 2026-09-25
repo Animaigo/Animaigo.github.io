@@ -1,0 +1,117 @@
+---
+import BlankLayout from "../layouts/BlankLayout.astro";
+import {
+  animeFavorites,
+  currentSignals,
+  favoriteGames,
+  profileIdentity,
+  profileStatus,
+  profileTech,
+  xpFavorites
+} from "@/core/data/profile";
+import { bangumiItems } from "@/core/data/bangumi";
+import { friendLinks } from "@/core/data/friends";
+import { getThemePath } from "@/core/themes/registry";
+---
+
+<BlankLayout title="About | Mikan KenkyuuSho Blank" description="关于 Reisen⁴ 与 Mikan KenkyuuSho。">
+  <header class="blank-page-head">
+    <div>
+      <p class="blank-kicker">Profile / plain text edition</p>
+      <h1>{profileIdentity.displayName}</h1>
+      <p>{profileIdentity.handle} · {profileIdentity.siteName}</p>
+    </div>
+    <span class="blank-page-index">ME</span>
+  </header>
+
+  <section class="blank-section blank-two-column">
+    <div>
+      <div class="blank-section-title"><h2>Profile</h2></div>
+      <p>{profileIdentity.bio}</p>
+      <div class="blank-actions">
+        <a href={profileIdentity.github} target="_blank" rel="noreferrer">GitHub</a>
+        <a href={profileIdentity.bilibili} target="_blank" rel="noreferrer">Bilibili</a>
+        {profileIdentity.bangumi && <a href={profileIdentity.bangumi} target="_blank" rel="noreferrer">Bangumi</a>}
+      </div>
+    </div>
+    <div>
+      <div class="blank-section-title"><h2>Status</h2></div>
+      <ul class="blank-definition-list">
+        {profileStatus.map((item) => <li>{item}</li>)}
+      </ul>
+    </div>
+  </section>
+
+  {
+    profileTech.length > 0 && (
+      <section class="blank-section">
+        <div class="blank-section-title"><h2>Tech line</h2></div>
+        <dl class="blank-definition-list blank-two-column">
+          {profileTech.map((item) => <div><dt>{item.name}</dt><dd>{item.note}</dd></div>)}
+        </dl>
+      </section>
+    )
+  }
+
+  <section class="blank-section blank-two-column">
+    <div>
+      <div class="blank-section-title"><h2>Anime</h2></div>
+      <a class="blank-link-row" href={getThemePath("blank", "/anime/")}>
+        <span class="blank-link-row-label">Anime</span>
+        <span class="blank-menu-count">{bangumiItems.length > 0 ? `${bangumiItems.length} 部` : "尚未同步"}</span>
+        <span aria-hidden="true">→</span>
+      </a>
+      {
+        animeFavorites.length > 0 && (
+          <dl class="blank-definition-list">
+            {animeFavorites.map((item) => <div><dt>{item.title}</dt><dd>{item.subtitle}</dd></div>)}
+          </dl>
+        )
+      }
+    </div>
+    <div>
+      {
+        (xpFavorites.length > 0 || favoriteGames.length > 0) && (
+          <>
+            <div class="blank-section-title"><h2>XP / Games</h2></div>
+            <div class="blank-inline-list">
+              {xpFavorites.map((item) => <span>#{item.title}</span>)}
+              {favoriteGames.map((item) => <span>#{item.title}</span>)}
+            </div>
+          </>
+        )
+      }
+    </div>
+  </section>
+
+  <section class="blank-section">
+    <div class="blank-section-title"><h2>Current signal</h2></div>
+    <dl class="blank-definition-list blank-two-column">
+      {currentSignals.map((item) => <div><dt>{item.label}</dt><dd>{item.text}</dd></div>)}
+    </dl>
+  </section>
+
+  {
+    friendLinks.length > 0 && (
+      <section class="blank-section">
+        <div class="blank-section-title">
+          <h2>Friends</h2>
+          <span class="blank-label">{friendLinks.length}</span>
+        </div>
+        <div class="blank-friend-list">
+          {friendLinks.map((friend) => (
+            <a class="blank-friend-row" href={friend.url} target="_blank" rel="noreferrer">
+              {friend.avatar ? (
+                <img src={friend.avatar} alt={`${friend.name} 头像`} width="36" height="36" loading="lazy" />
+              ) : (
+                <span class="blank-friend-fallback" aria-hidden="true">{friend.name.slice(0, 1)}</span>
+              )}
+              <span>{friend.name}</span>
+              {friend.description && <small>{friend.description}</small>}
+            </a>
+          ))}
+        </div>
+      </section>
+    )
+  }
+</BlankLayout>

@@ -1,0 +1,27 @@
+node_modules/
+dist/
+.astro/
+tmp/
+
+# AI 助手的工作记忆与本地配置，含账号、邮箱等个人信息，不入公开仓库。
+.workbuddy/
+
+# 由 scripts/generate-assets.mjs 在构建时从 MUSIC/ 生成，不入库（省去约 120MB 重复）。
+# CI 会先跑 npm run generate:assets，部署产物不受影响。
+public/themes/fuyukawa-kagari/music/
+.DS_Store
+Thumbs.db
+*.log
+__pycache__/
+*.pyc
+
+# Local source materials already copied/processed into public assets or content.
+/Profile.jpg
+!/public/themes/fuyukawa-kagari/assets/profile.jpg
+fuyukawa_kagari_static_2400x1700.png
+矮脚猪.png
+astrbot_plugin_dev_experience.md
+roleplay_persona_prompt_experience.md
+astrbot教学/
+技能/
+文章封面/

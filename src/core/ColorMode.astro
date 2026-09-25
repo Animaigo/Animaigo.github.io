@@ -1,0 +1,91 @@
+<script is:inline data-astro-rerun>
+  (() => {
+    const STORAGE_KEY = "mikan-color-mode-v1";
+    const root = document.documentElement;
+    const query = window.matchMedia("(prefers-color-scheme: dark)");
+
+    const readStored = () => {
+      try {
+        const value = window.localStorage.getItem(STORAGE_KEY);
+        return value === "light" || value === "dark" || value === "auto" ? value : "auto";
+      } catch {
+        return "auto";
+      }
+    };
+
+    const resolve = (mode) => (mode === "auto" ? (query.matches ? "dark" : "light") : mode);
+
+    const syncButtons = () => {
+      const dark = resolve(readStored()) === "dark";
+      document.querySelectorAll("[data-color-mode-toggle]").forEach((button) => {
+        const label = dark ? "切换到亮色模式" : "切换到深色模式";
+        button.setAttribute("aria-pressed", String(dark));
+        button.setAttribute("aria-label", label);
+        button.setAttribute("title", label);
+      });
+    };
+
+    // 每次执行都重新写回属性：客户端路由换页会重置 <html> 上的 data-*，
+    // 而内联脚本配合 data-astro-rerun 会在换页后重跑，于是状态不会丢。
+    const apply = () => {
+      const preference = readStored();
+      const resolved = resolve(preference);
+      root.dataset.colorMode = resolved;
+      root.dataset.colorModePreference = preference;
+      root.style.colorScheme = resolved;
+      syncButtons();
+    };
+
+    apply();
+
+    if (window.__mikanColorMode) return;
+
+    const setPreference = (next) => {
+      const preference = next === "light" || next === "dark" ? next : "auto";
+      try {
+        window.localStorage.setItem(STORAGE_KEY, preference);
+      } catch {
+        // 存储不可用时仍在当前页面生效
+      }
+
+      // 用一次较长的交叉淡入完成明暗切换（不支持或开了减弱动态时直接切换）
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+      if (typeof document.startViewTransition === "function" && !reduceMotion.matches) {
+        root.classList.add("is-color-mode-switching");
+        const transition = document.startViewTransition(apply);
+        transition.finished.finally(() => root.classList.remove("is-color-mode-switching"));
+      } else {
+        apply();
+      }
+    };
+
+    window.__mikanColorMode = {
+      get preference() {
+        return readStored();
+      },
+      resolved: () => resolve(readStored()),
+      set: setPreference,
+      toggle: () => {
+        const next = resolve(readStored()) === "dark" ? "light" : "dark";
+        setPreference(next);
+        return next;
+      },
+      sync: apply
+    };
+
+    query.addEventListener("change", () => {
+      if (readStored() === "auto") apply();
+    });
+
+    document.addEventListener("click", (event) => {
+      const button = event.target instanceof Element ? event.target.closest("[data-color-mode-toggle]") : null;
+      if (!button) return;
+      event.preventDefault();
+      window.__mikanColorMode.toggle();
+    });
+
+    document.addEventListener("DOMContentLoaded", syncButtons);
+    document.addEventListener("astro:page-load", apply);
+    document.addEventListener("astro:after-swap", apply);
+  })();
+</script>

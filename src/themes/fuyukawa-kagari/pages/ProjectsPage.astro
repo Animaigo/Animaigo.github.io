@@ -1,0 +1,231 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { projectEntries } from "@/core/data/projects";
+
+const projects = projectEntries;
+---
+
+<BaseLayout title="Projects | Mikan KenkyuuSho" description="Mikan KenkyuuSho 的长期收藏桌与随手做的小东西。">
+  <section class="works-shell" aria-labelledby="works-title">
+    <div class="works-hero">
+      <div>
+        <p class="section-kicker">Works README</p>
+        <h1 id="works-title">Projects</h1>
+        <p>
+          这里不是严肃作品集，更像一张会慢慢更新的收藏桌。长短不一的卡片拼成一面墙，点开任意一张能看到状态、技术栈和入口。
+        </p>
+      </div>
+    </div>
+  </section>
+
+  {
+    projects.length > 0
+      ? (
+          <>
+            <div class="mosaic" aria-label="Project cards">
+              {projects.map((project) => (
+                <button
+                  class={`mosaic-card mosaic-card--${project.size}`}
+                  type="button"
+                  data-project-id={project.id}
+                  aria-label={`打开项目：${project.title}`}
+                >
+                  <img src={project.image} alt="" loading="lazy" />
+                  <span class="mosaic-scrim" aria-hidden="true" />
+                  <span class="mosaic-copy">
+                    <strong>{project.title}</strong>
+                    <span>{project.summary}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            <div class="project-overlay" data-project-overlay hidden>
+              <div class="project-sheet" data-project-sheet role="dialog" aria-modal="true" aria-label="项目详情" />
+            </div>
+
+            <script type="application/json" id="project-data" set:html={JSON.stringify(projects)} />
+          </>
+        )
+      : (
+          <section class="works-shell">
+            <p class="works-empty">
+              这里还在等第一张卡片。往 <code>src/core/data/projects.ts</code> 里加一条，它就会出现在这面墙上。
+            </p>
+          </section>
+        )
+  }
+</BaseLayout>
+
+<script>
+  (() => {
+    const overlay = document.querySelector("[data-project-overlay]");
+    const sheet = document.querySelector("[data-project-sheet]");
+    const dataNode = document.getElementById("project-data");
+    if (!overlay || !sheet || !dataNode) return;
+
+    let projects = [];
+    try {
+      projects = JSON.parse(dataNode.textContent || "[]");
+    } catch {
+      projects = [];
+    }
+    const projectsById = new Map(projects.map((project) => [project.id, project]));
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let activeCard = null;
+
+    const transitionName = (card) => `project-${card.dataset.projectId}`;
+
+    const buildDetail = (project) => {
+      const fragment = document.createDocumentFragment();
+
+      const hero = document.createElement("img");
+      hero.className = "project-hero";
+      hero.src = project.image;
+      hero.alt = "";
+      fragment.append(hero);
+
+      const body = document.createElement("div");
+      body.className = "project-body";
+
+      const meta = document.createElement("p");
+      meta.className = "project-meta";
+      meta.textContent = `${project.status} · ${project.year}`;
+      body.append(meta);
+
+      const title = document.createElement("h2");
+      title.textContent = project.title;
+      body.append(title);
+
+      const summary = document.createElement("p");
+      summary.className = "project-summary";
+      summary.textContent = project.summary;
+      body.append(summary);
+
+      const detail = document.createElement("p");
+      detail.className = "project-detail";
+      detail.textContent = project.detail;
+      body.append(detail);
+
+      const tags = document.createElement("div");
+      tags.className = "project-tags";
+      project.tags.forEach((tag) => {
+        const span = document.createElement("span");
+        span.textContent = `#${tag}`;
+        tags.append(span);
+      });
+      body.append(tags);
+
+      const links = document.createElement("div");
+      links.className = "project-links";
+      project.links.forEach((link) => {
+        const anchor = document.createElement("a");
+        anchor.href = link.href;
+        anchor.target = "_blank";
+        anchor.rel = "noreferrer";
+        anchor.textContent = link.label;
+        links.append(anchor);
+      });
+      body.append(links);
+
+      fragment.append(body);
+      return fragment;
+    };
+
+    const openProject = (card) => {
+      const project = projectsById.get(card.dataset.projectId);
+      if (!project) return;
+
+      // 大图的裁切比例跟着被点的卡片走（限幅在 1.3–2.0），展开时图片不会换构图
+      const cardRect = card.getBoundingClientRect();
+      const cardRatio = cardRect.height ? cardRect.width / cardRect.height : 16 / 9;
+      sheet.style.setProperty("--project-hero-ratio", String(Math.min(2, Math.max(1.3, cardRatio))));
+
+      sheet.replaceChildren(buildDetail(project));
+      activeCard = card;
+      const root = document.documentElement;
+
+      const name = transitionName(card);
+      if (document.startViewTransition && !reduceMotion.matches) {
+        card.style.viewTransitionName = name;
+        const transition = document.startViewTransition(() => {
+          card.style.viewTransitionName = "";
+          overlay.hidden = false;
+          sheet.style.viewTransitionName = name;
+          document.body.classList.add("is-project-open");
+          root.classList.add("is-project-open");
+        });
+        transition.finished.finally(() => {
+          sheet.style.viewTransitionName = "";
+        });
+      } else {
+        overlay.hidden = false;
+        document.body.classList.add("is-project-open");
+        root.classList.add("is-project-open");
+      }
+    };
+
+    const closeProject = () => {
+      if (overlay.hidden) return;
+      const card = activeCard;
+      const root = document.documentElement;
+      const name = card ? transitionName(card) : "";
+
+      const finish = () => {
+        overlay.hidden = true;
+        sheet.replaceChildren();
+        document.body.classList.remove("is-project-open");
+        root.classList.remove("is-project-open");
+        if (card) {
+          card.style.viewTransitionName = "";
+          activeCard = null;
+        }
+      };
+
+      if (document.startViewTransition && card && !reduceMotion.matches) {
+        // 收起时也带上同一套轻微回弹：动画期间先挂着标记类
+        root.classList.add("is-project-closing");
+        sheet.style.viewTransitionName = name;
+        const transition = document.startViewTransition(() => {
+          sheet.style.viewTransitionName = "";
+          card.style.viewTransitionName = name;
+          overlay.hidden = true;
+          document.body.classList.remove("is-project-open");
+          root.classList.remove("is-project-open");
+        });
+        transition.finished.finally(() => {
+          root.classList.remove("is-project-closing");
+          finish();
+        });
+      } else {
+        finish();
+      }
+    };
+
+    document.addEventListener("click", (event) => {
+      const target = event.target instanceof Element ? event.target : null;
+
+      const card = target?.closest("[data-project-id]");
+      if (card) {
+        openProject(card);
+        return;
+      }
+
+      // 没有关闭按钮：点卡片以外的背景（或按 Esc）退出
+      if (target === overlay) closeProject();
+    });
+
+    window.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closeProject();
+    });
+  })();
+</script>
+
+<style>
+  .works-empty code {
+    color: var(--ink);
+    font-family: "Cascadia Code", "Fira Code", Consolas, monospace;
+    font-size: 0.86em;
+  }
+</style>

@@ -1,0 +1,27 @@
+---
+interface Props {
+  href: string;
+  label?: string;
+}
+
+const { href, label = "返回" } = Astro.props;
+---
+
+<a
+  class="back-button"
+  href={href}
+  data-back-button
+  onclick="if (history.length > 1 && document.referrer && document.referrer.indexOf(location.origin) === 0) { event.preventDefault(); history.back(); }"
+>
+  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+    <path
+      d="M15 5 8 12l7 7"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2.2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+  </svg>
+  <span>{label}</span>
+</a>

@@ -1,0 +1,1280 @@
+---
+import "../styles/theme.css";
+import { site } from "@/lib/site";
+import type { BlogPost } from "@/core/content/blog";
+import { Icon } from "astro-icon/components";
+import { ClientRouter } from "astro:transitions";
+import ThemePreferenceGate from "@/core/themes/ThemePreferenceGate.astro";
+import ThemeLongPressMenu from "@/core/themes/ThemeLongPressMenu.astro";
+import ConsoleEasterEgg from "@/core/ConsoleEasterEgg.astro";
+import PerformanceProfile from "@/core/PerformanceProfile.astro";
+import ColorMode from "@/core/ColorMode.astro";
+import QuickActions from "@/core/QuickActions.astro";
+import SeoMeta from "@/core/SeoMeta.astro";
+import { getCanonicalPath, getThemePath } from "@/core/themes/registry";
+import BackButton from "@/core/navigation/BackButton.astro";
+import { getBackTarget } from "@/core/navigation/backTarget";
+import { kagariAssets } from "../assets";
+
+interface Props {
+  title?: string;
+  description?: string;
+  honorThemePreference?: boolean;
+  redirectThemedNotFound?: boolean;
+  isArticlePage?: boolean;
+  article?: BlogPost["data"];
+  surface?: "cover" | "page";
+}
+
+const {
+  title = site.title,
+  description = site.description,
+  honorThemePreference = true,
+  redirectThemedNotFound = false,
+  isArticlePage = false,
+  article,
+  surface = "page",
+} = Astro.props;
+const canonicalPath = getCanonicalPath(Astro.url.pathname);
+const canonical = new URL(canonicalPath, Astro.site ?? Astro.url);
+const backTarget = getBackTarget("fuyukawa-kagari", canonicalPath);
+const themeHomePath = getThemePath("fuyukawa-kagari", "/");
+const navItems = site.nav.map((item) => ({
+  ...item,
+  href: getThemePath("fuyukawa-kagari", item.href)
+}));
+const isAlternateThemeRoute = Astro.url.pathname.startsWith("/themes/");
+const themedNotFoundRedirectScript = `(() => {
+  const themeMatch = window.location.pathname.match(/^\\/themes\\/(blank)(?:\\/|$)/);
+  if (!themeMatch) return;
+  const themeId = themeMatch[1];
+  const notFoundPath = "/themes/" + themeId + "/404/";
+  if (window.location.pathname === notFoundPath) return;
+  const original = window.location.pathname + window.location.search + window.location.hash;
+  window.location.replace(notFoundPath + "?from=" + encodeURIComponent(original));
+})();`;
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <PerformanceProfile />
+    <ColorMode />
+    <SeoMeta title={title} description={description} canonical={canonical} isArticlePage={isArticlePage} article={article} />
+    <meta name="theme-color" content="#fff8ec" />
+    {isAlternateThemeRoute && <meta name="robots" content="noindex,follow" />}
+    {
+      redirectThemedNotFound && (
+        <script is:inline set:html={themedNotFoundRedirectScript}></script>
+      )
+    }
+    <link rel="canonical" href={canonical} />
+    <ThemePreferenceGate currentTheme="fuyukawa-kagari" honorPreference={honorThemePreference} />
+    <link rel="icon" type="image/png" href={kagariAssets.favicon} />
+    <link rel="apple-touch-icon" href={kagariAssets.appleTouchIcon} />
+    <title>{title}</title>
+    <ClientRouter />
+    <ConsoleEasterEgg />
+  </head>
+  <body
+    class:list={[surface === "cover" ? "has-cover-surface" : "has-page-surface"]}
+    data-pagefind-ignore={isAlternateThemeRoute ? true : undefined}
+    data-yuimi-selection-lock={isArticlePage ? undefined : "true"}
+    data-yuimi-article-page={isArticlePage ? "true" : undefined}
+  >
+    <div class="sakura-rain" aria-hidden="true">
+      {Array.from({ length: 34 }).map(() => <span></span>)}
+    </div>
+    <div class="pig-scrollbar" data-pig-scrollbar aria-hidden="true">
+      <div class="pig-scrollbar-track">
+        <div class="pig-scrollbar-fill"></div>
+      </div>
+      <div class="pig-scrollbar-pig">
+        <span class="pig-scrollbar-snort">咕噜噜~</span>
+        <img src={kagariAssets.scrollPig} alt="" width="56" height="48" />
+      </div>
+    </div>
+    <aside class="toy-dock" aria-label="Mikan KenkyuuSho toy dock" transition:persist="yuimi-toy-dock">
+      <button class="toy-dock-handle" type="button" aria-label="打开侧边工具">
+        <span>TOOLS</span>
+      </button>
+      <div class="toy-dock-panel">
+        <section class="toy-widget live2d-control-widget" aria-label="Live2D 看板娘控制" hidden>
+          <div class="toy-widget-title">
+            <span>✦</span>
+            <strong>Live2D 控制台</strong>
+          </div>
+          <p class="live2d-status" data-live2d-status>正在唤醒看板娘...</p>
+          <div class="live2d-controls">
+            <button type="button" data-live2d-toggle>隐藏看板娘</button>
+            <button type="button" data-live2d-message>说句话</button>
+            <button type="button" data-live2d-model>换模型</button>
+            <button type="button" data-live2d-texture>换衣服</button>
+          </div>
+        </section>
+
+        <section class="toy-widget music-widget" aria-label="音乐播放器">
+          <div class="toy-widget-title">
+            <span>♫</span>
+            <strong>Mikan Radio</strong>
+          </div>
+          <div class="music-player-shell">
+            <div class="music-cover-area">
+              <div class="record-player" aria-hidden="true">
+                <div class="record-arm"></div>
+                <div class="record-disc">
+                  <div class="record-label">
+                    <img src={kagariAssets.brand} alt="" width="42" height="38" />
+                  </div>
+                </div>
+              </div>
+              <span class="music-cover-caption">now spinning</span>
+            </div>
+            <div class="music-info-area">
+              <span class="music-meta">Mikan playlist</span>
+              <p class="music-track">lofi sakura loop</p>
+              <p class="music-note" data-music-note>正在读取歌单...</p>
+            </div>
+          </div>
+          <div class="music-progress">
+            <div class="music-control-label">
+              <span>播放进度</span>
+              <strong><span data-music-current>00:00</span> / <span data-music-duration>00:00</span></strong>
+            </div>
+            <input data-music-seek type="range" min="0" max="100" value="0" step="0.1" aria-label="播放进度" />
+          </div>
+          <div class="music-bottom-row">
+            <div class="music-controls" aria-label="播放控制">
+              <button type="button" data-music-prev aria-label="上一首">‹</button>
+              <button type="button" data-music-toggle aria-label="播放或暂停音乐">▶</button>
+              <button type="button" data-music-next aria-label="下一首">›</button>
+            </div>
+            <div class="music-volume">
+              <div class="music-control-label">
+                <span>音量</span>
+                <strong>volume</strong>
+              </div>
+              <input data-music-volume type="range" min="0" max="1" value="0.28" step="0.01" aria-label="音量" />
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </aside>
+    <nav class="custom-context-menu" data-context-menu aria-label="&#x5FEB;&#x6377;&#x83DC;&#x5355;">
+      <button type="button" data-context-action="top">&#x2191; &#x56DE;&#x5230;&#x9876;&#x90E8;</button>
+      <button type="button" data-context-action="refresh">&#x21BB; &#x5237;&#x65B0;&#x9875;&#x9762;</button>
+      <button type="button" data-context-action="home">&#x2302; &#x8FD4;&#x56DE;&#x9996;&#x9875;</button>
+      <button type="button" data-context-action="back">&#x2190; &#x540E;&#x9000;</button>
+      <button type="button" data-context-action="forward">&#x2192; &#x524D;&#x8FDB;</button>
+      <button type="button" data-context-action="copy">&#x29C9; &#x590D;&#x5236;&#x94FE;&#x63A5;</button>
+      <button type="button" data-context-action="title">T &#x590D;&#x5236;&#x6807;&#x9898;</button>
+      <button type="button" data-context-action="sakura" aria-pressed="true">❄ 雪花：开</button>
+      <button type="button" data-context-action="music-autoplay" aria-pressed="false">♫ 进站续播：关</button>
+      <div class="context-theme-group" aria-label="选择前端主题">
+        <span class="context-theme-label">THEME</span>
+        <button type="button" data-theme-select="fuyukawa-kagari" aria-pressed="true">
+          <span class="context-theme-mark" aria-hidden="true">●</span>
+          Fuyukawa Kagari
+        </button>
+        <button type="button" data-theme-select="blank" aria-pressed="false">
+          <span class="context-theme-mark" aria-hidden="true">○</span>
+          Blank
+        </button>
+      </div>
+    </nav>
+    <QuickActions themeTarget="blank" themeLabel="切换到 Blank 主题" />
+    <div class="site-shell">
+      <header class="site-header" aria-label="Primary">
+        <a class="brand" href={themeHomePath} aria-label={`${site.name} home`}>
+          <img src={kagariAssets.brand} alt="" width="40" height="36" />
+          <span>{site.name}</span>
+        </a>
+        <nav class="nav-links" aria-label="Main navigation">
+          {
+            navItems.map((item) => (
+              <a href={item.href} aria-label={`${item.label}: ${item.hint}`}>
+                <span class="nav-icon" aria-hidden="true"><Icon name={item.icon} /></span>
+                <span class="nav-label">{item.label}</span>
+                <span class="nav-hint">{item.hint}</span>
+              </a>
+            ))
+          }
+        </nav>
+      </header>
+      <main>
+        {
+          backTarget && (
+            <div class="back-bar">
+              <BackButton href={backTarget} />
+            </div>
+          )
+        }
+        <slot />
+      </main>
+      <footer class="site-footer" data-footer-timers>
+        <div class="footer-inner">
+          <p class="footer-signature-line">© 2026 BY Reisen⁴ / Mikan KenkyuuSho</p>
+          <p>记录日常，也收藏那些由一串串奇迹连结而成的时刻。</p>
+          <p>📈 本站总访问：<span class="footer-counter" data-visit-total>—</span> 次</p>
+          <p>📅 今天你是第 <span class="footer-counter" data-visit-today>—</span> 位来访者</p>
+          <p>🌸 Mikan KenkyuuSho 已落地：<time data-elapsed-from="2026-09-01T00:00:00+08:00" data-elapsed-mode="second">计算中...</time></p>
+          <p class="footer-status-line">snow: falling / mikan-tank: on duty / tea: warm</p>
+        </div>
+      </footer>
+    </div>
+    <ThemeLongPressMenu />
+
+    <script>
+      let pigScrollTimer = 0;
+      let pigScrollFrame = 0;
+
+      const updatePigScrollbar = () => {
+        const pigScrollbar = document.querySelector("[data-pig-scrollbar]");
+        if (!pigScrollbar) return;
+
+        const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+        const progress = scrollable > 0 ? window.scrollY / scrollable : 0;
+        const track = pigScrollbar.querySelector(".pig-scrollbar-track");
+        const trackHeight = track?.getBoundingClientRect().height ?? 0;
+        const pigY = 20 + progress * trackHeight;
+        pigScrollbar.style.setProperty("--scroll-progress", `${Math.min(1, Math.max(0, progress))}`);
+        pigScrollbar.style.setProperty("--scroll-percent", `${Math.min(1, Math.max(0, progress)) * 100}%`);
+        pigScrollbar.style.setProperty("--pig-y", `${pigY}px`);
+        pigScrollbar.classList.add("is-moving");
+        window.clearTimeout(pigScrollTimer);
+        pigScrollTimer = window.setTimeout(() => {
+          pigScrollbar.classList.remove("is-moving");
+        }, 260);
+      };
+
+      const schedulePigScrollbar = () => {
+        if (pigScrollFrame) return;
+        pigScrollFrame = window.requestAnimationFrame(() => {
+          pigScrollFrame = 0;
+          updatePigScrollbar();
+        });
+      };
+
+      schedulePigScrollbar();
+      window.addEventListener("scroll", schedulePigScrollbar, { passive: true });
+      window.addEventListener("resize", schedulePigScrollbar);
+      document.addEventListener("astro:page-load", schedulePigScrollbar);
+      document.addEventListener("astro:after-swap", schedulePigScrollbar);
+      window.addEventListener("pageshow", schedulePigScrollbar);
+
+      const padTimer = (value) => String(value).padStart(2, "0");
+      const getElapsedParts = (startDate) => {
+        const diff = Math.max(0, Date.now() - startDate.getTime());
+        const totalSeconds = Math.floor(diff / 1000);
+        return {
+          days: Math.floor(totalSeconds / 86400),
+          hours: Math.floor((totalSeconds % 86400) / 3600),
+          minutes: Math.floor((totalSeconds % 3600) / 60),
+          seconds: totalSeconds % 60
+        };
+      };
+
+      const formatElapsed = (startDate, mode = "second") => {
+        const { days, hours, minutes, seconds } = getElapsedParts(startDate);
+        if (mode === "minute") {
+          return `${days.toLocaleString("zh-CN")}天 ${padTimer(hours)}小时 ${padTimer(minutes)}分`;
+        }
+        if (mode === "days") {
+          return `第 ${days.toLocaleString("zh-CN")} 天`;
+        }
+        return `${days.toLocaleString("zh-CN")}天 ${padTimer(hours)}小时 ${padTimer(minutes)}分 ${padTimer(seconds)}秒`;
+      };
+
+      const updateFooterTimers = () => {
+        const timerNodes = document.querySelectorAll("[data-elapsed-from]");
+        timerNodes.forEach((node) => {
+          const start = new Date(node.dataset.elapsedFrom);
+          if (Number.isNaN(start.getTime())) return;
+          node.textContent = formatElapsed(start, node.dataset.elapsedMode);
+          node.setAttribute("dateTime", start.toISOString());
+        });
+      };
+
+      let footerTimer = 0;
+      const scheduleFooterTimers = () => {
+        if (footerTimer) window.clearTimeout(footerTimer);
+        footerTimer = 0;
+        if (document.visibilityState !== "visible") return;
+        updateFooterTimers();
+        footerTimer = window.setTimeout(scheduleFooterTimers, 1000);
+      };
+
+      scheduleFooterTimers();
+      document.addEventListener("astro:page-load", updateFooterTimers);
+      document.addEventListener("astro:after-swap", updateFooterTimers);
+      window.addEventListener("pageshow", updateFooterTimers);
+      document.addEventListener("visibilitychange", scheduleFooterTimers);
+
+      // 访问统计：总访问量与「今天第几位来访者」，由第三方计数服务维护。
+      // 每次会话只计一次；服务不可用时展示缓存值（没有缓存则显示占位符）。
+      const visitCacheKey = "mikan-visit-stats-v1";
+      const visitSessionKey = "mikan-visit-counted-v1";
+      const isLocalVisitHost = ["localhost", "127.0.0.1", "::1", ""].includes(window.location.hostname);
+      // 本地预览走独立命名空间，避免把开发访问混进真实统计
+      const visitNamespace = isLocalVisitHost ? "mikan-blog-dev-probe" : "mikan-fuyukawa-blog";
+
+      const readVisitCache = () => {
+        try {
+          return JSON.parse(window.localStorage.getItem(visitCacheKey) || "{}");
+        } catch {
+          return {};
+        }
+      };
+
+      const renderVisitStats = (stats = {}) => {
+        const total = document.querySelector("[data-visit-total]");
+        const today = document.querySelector("[data-visit-today]");
+        if (total) total.textContent = Number.isFinite(stats.total) ? stats.total.toLocaleString("zh-CN") : "—";
+        if (today) today.textContent = Number.isFinite(stats.today) ? stats.today.toLocaleString("zh-CN") : "—";
+      };
+
+      const hitVisitCounter = async (key) => {
+        const response = await fetch(`https://abacus.jasoncameron.dev/hit/${visitNamespace}/${key}`, {
+          cache: "no-store"
+        });
+        if (!response.ok) throw new Error(`visit counter ${response.status}`);
+        const data = await response.json();
+        const value = Number(data?.value);
+        if (!Number.isFinite(value)) throw new Error("visit counter payload");
+        return value;
+      };
+
+      const initVisitStats = async () => {
+        renderVisitStats(readVisitCache());
+        try {
+          if (window.sessionStorage.getItem(visitSessionKey) === "1") return;
+        } catch {
+          /* sessionStorage 不可用时继续计数 */
+        }
+        try {
+          const day = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Shanghai" });
+          const [total, today] = await Promise.all([hitVisitCounter("total"), hitVisitCounter(`day-${day}`)]);
+          const stats = { total, today, day };
+          try {
+            window.localStorage.setItem(visitCacheKey, JSON.stringify(stats));
+          } catch {
+            /* 忽略存储失败 */
+          }
+          try {
+            window.sessionStorage.setItem(visitSessionKey, "1");
+          } catch {
+            /* 忽略存储失败 */
+          }
+          renderVisitStats(stats);
+        } catch {
+          /* 计数服务不可达时保留缓存值或占位符 */
+        }
+      };
+
+      initVisitStats();
+
+      let toyDockCloseTimer = 0;
+      const getToyDock = () => document.querySelector(".toy-dock");
+      const isInsideToyDock = (target) => {
+        const toyDock = getToyDock();
+        return Boolean(toyDock && target instanceof Node && toyDock.contains(target));
+      };
+      document.addEventListener("click", (event) => {
+        const handle = event.target instanceof Element ? event.target.closest(".toy-dock-handle") : null;
+        if (!handle) return;
+        const toyDock = getToyDock();
+        toyDock?.classList.toggle("is-pinned");
+      });
+      document.addEventListener("pointerover", (event) => {
+        if (!isInsideToyDock(event.target) || isInsideToyDock(event.relatedTarget)) return;
+        window.clearTimeout(toyDockCloseTimer);
+      });
+      document.addEventListener("pointerout", (event) => {
+        if (!isInsideToyDock(event.target) || isInsideToyDock(event.relatedTarget)) return;
+        const toyDock = getToyDock();
+        if (!toyDock) return;
+        if (toyDock.classList.contains("is-pinned")) return;
+        toyDockCloseTimer = window.setTimeout(() => {
+          toyDock.querySelector(":focus")?.blur();
+        }, 180);
+      });
+      window.addEventListener("pointerdown", (event) => {
+        const toyDock = getToyDock();
+        if (!toyDock || toyDock.contains(event.target)) return;
+        toyDock.classList.remove("is-pinned");
+        toyDock.querySelector(":focus")?.blur();
+      });
+      window.addEventListener("keydown", (event) => {
+        const toyDock = getToyDock();
+        if (event.key !== "Escape" || !toyDock) return;
+        toyDock.classList.remove("is-pinned");
+        toyDock.querySelector(":focus")?.blur();
+      });
+
+      const live2dBase = "https://fastly.jsdelivr.net/npm/live2d-widgets@1.0.0-rc.6/dist/";
+      const live2dStatus = document.querySelector("[data-live2d-status]");
+      const live2dToggle = document.querySelector("[data-live2d-toggle]");
+      const live2dMessage = document.querySelector("[data-live2d-message]");
+      const live2dModel = document.querySelector("[data-live2d-model]");
+      const live2dTexture = document.querySelector("[data-live2d-texture]");
+      const live2dWidget = live2dStatus?.closest(".live2d-control-widget");
+      const live2dControls = [live2dToggle, live2dMessage, live2dModel, live2dTexture].filter(Boolean);
+      const live2dConsoleStorageKey = "mikan-live2d-enabled-v1";
+      let live2dConsoleEnabled = (() => {
+        try {
+          return window.localStorage.getItem(live2dConsoleStorageKey) === "show";
+        } catch {
+          return false;
+        }
+      })();
+      const storeLive2dConsoleEnabled = (enabled) => {
+        try {
+          window.localStorage.setItem(live2dConsoleStorageKey, enabled ? "show" : "hide");
+        } catch {
+          // Ignore storage failures; the console preference simply won't persist.
+        }
+      };
+      const applyLive2dConsoleVisibility = () => {
+        if (!live2dWidget) return;
+        live2dWidget.toggleAttribute("hidden", !live2dConsoleEnabled);
+      };
+      let live2dVisible = true;
+      let live2dReady = false;
+      let live2dInitStarted = false;
+      let live2dIdleHandle = 0;
+      let live2dFallbackTimer = 0;
+      const live2dConnection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+      const live2dResources = new Map();
+
+      const setLive2dStatus = (text) => {
+        if (live2dStatus) live2dStatus.textContent = text;
+      };
+
+      const isHomeRoute = () => {
+        const path = window.location.pathname.replace(/\/index\.html$/, "/");
+        return path === "/" || path === "";
+      };
+
+      const setLive2dControlsLocked = (locked) => {
+        live2dWidget?.classList.toggle("is-route-locked", locked);
+        live2dControls.forEach((button) => {
+          button.disabled = locked;
+          button.setAttribute("aria-disabled", String(locked));
+        });
+        if (locked) {
+          if (live2dToggle) live2dToggle.textContent = "仅首页可用";
+          setLive2dStatus("看板娘只在首页出现，阅读页先让出视野。");
+        }
+      };
+
+      const hasLive2dWidget = () => {
+        const waifu = document.getElementById("waifu");
+        const canvas = document.getElementById("live2d");
+        if (!waifu || !canvas) return false;
+        const canvasRect = canvas.getBoundingClientRect();
+        return canvasRect.width > 80 && canvasRect.height > 80;
+      };
+
+      const removeLive2dWidget = () => {
+        removeLocalWaifuFallback();
+        document.getElementById("waifu")?.remove();
+        document.getElementById("waifu-toggle")?.remove();
+        document.getElementById("waifu-tool")?.remove();
+        live2dReady = false;
+        live2dInitStarted = false;
+        live2dVisible = false;
+      };
+
+      const resetLive2dStorage = () => {
+        localStorage.removeItem("waifu-display");
+        localStorage.setItem("modelId", "0");
+        localStorage.setItem("modelTexturesId", "0");
+      };
+
+      const clearLive2dSchedule = () => {
+        if (live2dIdleHandle && window.cancelIdleCallback) window.cancelIdleCallback(live2dIdleHandle);
+        if (live2dFallbackTimer) window.clearTimeout(live2dFallbackTimer);
+        live2dIdleHandle = 0;
+        live2dFallbackTimer = 0;
+      };
+
+      const canAutoInitLive2d = () => {
+        const profile = document.documentElement.dataset.yuimiPerformance ?? "full";
+        const effectiveType = String(live2dConnection?.effectiveType || "").toLowerCase();
+        return profile === "full"
+          && !live2dConnection?.saveData
+          && !/(^|-)2g$/.test(effectiveType);
+      };
+
+      const loadExternalResource = (url, type) => {
+        if (live2dResources.has(url)) return live2dResources.get(url);
+        const existing = Array.from(document.head.querySelectorAll("link[href], script[src]"))
+          .find((element) => element.href === url || element.src === url);
+        if (existing) return Promise.resolve(url);
+
+        const promise = new Promise((resolve, reject) => {
+          const tag = type === "css" ? document.createElement("link") : document.createElement("script");
+          if (type === "css") {
+            tag.rel = "stylesheet";
+            tag.href = url;
+          } else {
+            tag.type = "module";
+            tag.src = url;
+          }
+          tag.onload = () => resolve(url);
+          tag.onerror = () => reject(url);
+          document.head.appendChild(tag);
+        }).catch((error) => {
+          live2dResources.delete(url);
+          throw error;
+        });
+
+        live2dResources.set(url, promise);
+        return promise;
+      };
+
+      // 暗门召唤的入场：只加类，动画由 theme.css 的 #waifu.is-summoned 负责
+      const summonWaifu = (element) => {
+        if (!element) return;
+        element.classList.remove("is-summoned");
+        void element.offsetWidth;
+        element.classList.add("is-summoned");
+      };
+
+      const setWaifuVisibility = (visible, options = {}) => {
+        const { persist = true } = options;
+        const waifu = document.getElementById("waifu");
+        live2dVisible = visible;
+        if (live2dToggle) live2dToggle.textContent = visible ? "隐藏看板娘" : "显示看板娘";
+        setLive2dStatus(visible ? "看板娘正在左下角待机。" : "看板娘已收起。");
+        if (visible) {
+          if (persist) localStorage.removeItem("waifu-display");
+        }
+        if (!waifu) return;
+
+        if (visible) {
+          waifu.classList.remove("waifu-hidden");
+          summonWaifu(waifu);
+          window.setTimeout(() => waifu.classList.add("waifu-active"), 0);
+        } else {
+          waifu.classList.remove("waifu-active");
+          if (persist) localStorage.setItem("waifu-display", Date.now().toString());
+          window.setTimeout(() => waifu.classList.add("waifu-hidden"), 320);
+        }
+      };
+
+      const showWaifuMessage = (message) => {
+        const tips = document.getElementById("waifu-tips");
+        if (!tips) return;
+        tips.innerHTML = message;
+        tips.classList.add("waifu-tips-active");
+        window.setTimeout(() => tips.classList.remove("waifu-tips-active"), 4200);
+      };
+
+      const waitForWaifu = (callback, retries = 30) => {
+        const waifu = document.getElementById("waifu");
+        if (waifu) {
+          callback(waifu);
+          return;
+        }
+        if (retries <= 0) return;
+        window.setTimeout(() => waitForWaifu(callback, retries - 1), 300);
+      };
+
+      const ensureLocalWaifuFallback = () => {
+        if (!isHomeRoute()) return;
+        if (document.querySelector(".waifu-local-fallback")) return;
+        const fallback = document.createElement("div");
+        fallback.className = "waifu-local-fallback";
+        fallback.setAttribute("aria-label", "Mikan KenkyuuSho fallback 看板娘");
+        fallback.innerHTML = `
+          <div class="waifu-local-bubble">Live2D 加载有点害羞，先由我值班。</div>
+          <div class="waifu-local-character">
+            <img src="/themes/fuyukawa-kagari/assets/profile.webp" alt="" width="128" height="128" />
+          </div>
+        `;
+        document.body.appendChild(fallback);
+      };
+
+      const removeLocalWaifuFallback = () => {
+        document.querySelector(".waifu-local-fallback")?.remove();
+      };
+
+      const activateWaifuFallbackIfBlank = () => {
+        if (!isHomeRoute()) {
+          removeLocalWaifuFallback();
+          return;
+        }
+        const waifu = document.getElementById("waifu");
+        const canvas = document.getElementById("live2d");
+        if (!waifu || !canvas || waifu.classList.contains("waifu-hidden")) return;
+        const canvasRect = canvas.getBoundingClientRect();
+        const hasUsableCanvas = canvasRect.width > 80 && canvasRect.height > 80;
+        const hasWidgetTools = Boolean(document.getElementById("waifu-tool"));
+        if (hasUsableCanvas && hasWidgetTools) {
+          removeLocalWaifuFallback();
+          setLive2dStatus("看板娘正在左下角待机。");
+          return;
+        }
+        ensureLocalWaifuFallback();
+        setLive2dStatus("Live2D 本体加载不稳定，已启用本地看板娘备用显示。");
+      };
+
+      const reconcileWaifuFallback = () => {
+        if (!isHomeRoute()) {
+          removeLocalWaifuFallback();
+          return;
+        }
+        const waifu = document.getElementById("waifu");
+        const canvas = document.getElementById("live2d");
+        if (!waifu || !canvas || waifu.classList.contains("waifu-hidden")) return;
+        const canvasRect = canvas.getBoundingClientRect();
+        if (canvasRect.width > 80 && canvasRect.height > 80) {
+          removeLocalWaifuFallback();
+          setLive2dStatus("看板娘正在左下角待机。");
+        }
+      };
+
+      const initLive2dWidget = async () => {
+        if (!isHomeRoute()) return;
+        clearLive2dSchedule();
+        if (hasLive2dWidget()) {
+          live2dReady = true;
+          live2dInitStarted = false;
+          setWaifuVisibility(true, { persist: false });
+          return;
+        }
+        if (live2dInitStarted) return;
+        live2dInitStarted = true;
+        try {
+          resetLive2dStorage();
+          setLive2dControlsLocked(false);
+          await Promise.all([
+            loadExternalResource(`${live2dBase}waifu.css`, "css"),
+            loadExternalResource(`${live2dBase}waifu-tips.js`, "js")
+          ]);
+          window.initWidget({
+            waifuPath: `${live2dBase}waifu-tips.json`,
+            cdnPath: "https://fastly.jsdelivr.net/gh/fghrsh/live2d_api/",
+            cubism2Path: `${live2dBase}live2d.min.js`,
+            cubism5Path: "https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js",
+            tools: ["photo", "quit"],
+            logLevel: "warn",
+            drag: true
+          });
+          live2dReady = true;
+          live2dVisible = true;
+          if (live2dToggle) live2dToggle.textContent = "隐藏看板娘";
+          setLive2dStatus("看板娘正在左下角待机。");
+          waitForWaifu((waifu) => {
+            waifu.classList.remove("waifu-hidden");
+            summonWaifu(waifu);
+            waifu.classList.add("waifu-active");
+            window.setTimeout(() => showWaifuMessage("欢迎来到 Mikan KenkyuuSho，今天也要开心记录生活。"), 900);
+            window.setTimeout(reconcileWaifuFallback, 4200);
+            window.setTimeout(activateWaifuFallbackIfBlank, 12000);
+          });
+        } catch (error) {
+          live2dInitStarted = false;
+          ensureLocalWaifuFallback();
+          setLive2dStatus("看板娘加载失败，请检查网络。");
+        }
+      };
+
+      const scheduleLive2dWidget = () => {
+        clearLive2dSchedule();
+        if (!live2dConsoleEnabled) return;
+        if (!isHomeRoute() || live2dReady || live2dInitStarted || hasLive2dWidget()) return;
+        if (live2dToggle) live2dToggle.textContent = "显示看板娘";
+        if (!canAutoInitLive2d()) {
+          setLive2dStatus("点击“显示看板娘”后再加载 Live2D。");
+          return;
+        }
+
+        setLive2dStatus("看板娘会在页面空闲后出现。");
+        const start = () => {
+          live2dIdleHandle = 0;
+          live2dFallbackTimer = 0;
+          void initLive2dWidget();
+        };
+        if (window.requestIdleCallback) {
+          live2dIdleHandle = window.requestIdleCallback(start, { timeout: 3200 });
+        } else {
+          live2dFallbackTimer = window.setTimeout(start, 1600);
+        }
+      };
+
+      const hardReloadLive2d = () => {
+        if (!isHomeRoute()) return;
+        removeLive2dWidget();
+        resetLive2dStorage();
+        initLive2dWidget();
+      };
+
+      const hideLive2dForRoute = () => {
+        clearLive2dSchedule();
+        removeLocalWaifuFallback();
+        const waifu = document.getElementById("waifu");
+        if (waifu) {
+          waifu.classList.remove("waifu-active");
+          waifu.classList.add("waifu-hidden");
+        }
+        live2dInitStarted = false;
+        live2dVisible = false;
+      };
+
+      const syncLive2dRouteState = () => {
+        applyLive2dConsoleVisibility();
+        if (!live2dConsoleEnabled) {
+          hideLive2dForRoute();
+          return;
+        }
+        if (!isHomeRoute()) {
+          hideLive2dForRoute();
+          setLive2dControlsLocked(true);
+          return;
+        }
+
+        setLive2dControlsLocked(false);
+        if (hasLive2dWidget()) {
+          setWaifuVisibility(true, { persist: false });
+          window.setTimeout(reconcileWaifuFallback, 800);
+          return;
+        }
+        if (document.getElementById("waifu")) {
+          hardReloadLive2d();
+          return;
+        }
+        live2dReady = false;
+        live2dInitStarted = false;
+        scheduleLive2dWidget();
+      };
+
+      const revealLive2dConsole = () => {
+        live2dConsoleEnabled = true;
+        storeLive2dConsoleEnabled(true);
+        live2dWidget?.removeAttribute("hidden");
+        live2dReady = false;
+        live2dInitStarted = false;
+        live2dVisible = false;
+        removeLocalWaifuFallback();
+        syncLive2dRouteState();
+      };
+
+      const hideLive2dConsole = () => {
+        live2dConsoleEnabled = false;
+        storeLive2dConsoleEnabled(false);
+        hideLive2dForRoute();
+        live2dWidget?.setAttribute("hidden", "");
+      };
+
+      // 暗门：在浏览器控制台输入 mikanShowDoll() 可恢复看板娘与控制台，
+      // 输入 mikanHideDoll() 可再次隐藏。偏好保存在 localStorage。
+      window.mikanShowDoll = revealLive2dConsole;
+      window.mikanHideDoll = hideLive2dConsole;
+
+      syncLive2dRouteState();
+      document.addEventListener("astro:page-load", syncLive2dRouteState);
+      document.addEventListener("astro:after-swap", syncLive2dRouteState);
+      window.addEventListener("pageshow", syncLive2dRouteState);
+      window.addEventListener("pagehide", clearLive2dSchedule);
+
+      live2dToggle?.addEventListener("click", () => {
+        if (!isHomeRoute()) return;
+        if (!live2dReady && !document.getElementById("waifu")) {
+          initLive2dWidget();
+          return;
+        }
+        if (live2dVisible && document.getElementById("waifu") && !document.getElementById("live2d")) {
+          hardReloadLive2d();
+          return;
+        }
+        setWaifuVisibility(!live2dVisible);
+      });
+      live2dMessage?.addEventListener("click", () => {
+        if (!isHomeRoute()) return;
+        setWaifuVisibility(true);
+        waitForWaifu((waifu) => waifu.classList.add("waifu-active"));
+        window.setTimeout(reconcileWaifuFallback, 800);
+        showWaifuMessage("我在这里。要不要继续给博客堆一点可爱的功能？");
+      });
+      live2dModel?.addEventListener("click", () => {
+        if (!isHomeRoute()) return;
+        hardReloadLive2d();
+      });
+      live2dTexture?.addEventListener("click", () => {
+        if (!isHomeRoute()) return;
+        hardReloadLive2d();
+      });
+
+      const musicCacheKey = "yuimi-radio-state-v1";
+      const musicAutoplayKey = "yuimi-radio-autoplay-v1";
+      const musicSessionAutoplayKey = "yuimi-radio-session-autoplay-v1";
+      const createYuimiRadio = () => {
+        const audio = new Audio();
+        const player = {
+          audio,
+          tracks: [],
+          index: 0,
+          seeking: false,
+          initialized: false,
+          restoreAutoplay: false,
+          pendingAutoplay: false,
+          elements: {},
+          controlAbort: null,
+          audioAbort: null,
+          unlockAbort: null
+        };
+
+        const formatAudioTime = (seconds) => {
+          if (!Number.isFinite(seconds)) return "00:00";
+          const minute = Math.floor(seconds / 60);
+          const second = Math.floor(seconds % 60);
+          return `${String(minute).padStart(2, "0")}:${String(second).padStart(2, "0")}`;
+        };
+
+        const getMusicState = () => {
+          try {
+            return JSON.parse(localStorage.getItem(musicCacheKey) ?? "{}");
+          } catch {
+            return {};
+          }
+        };
+
+        const isMusicAutoplayEnabled = () => localStorage.getItem(musicAutoplayKey) === "1";
+        const isMusicSessionAutoplayEnabled = () => sessionStorage.getItem(musicSessionAutoplayKey) === "1";
+        const setMusicSessionAutoplayEnabled = (enabled) => {
+          sessionStorage.setItem(musicSessionAutoplayKey, enabled ? "1" : "0");
+        };
+
+        const setMusicAutoplayEnabled = (enabled) => {
+          localStorage.setItem(musicAutoplayKey, enabled ? "1" : "0");
+          window.dispatchEvent(new CustomEvent("yuimi:music-autoplay-change", { detail: { enabled } }));
+        };
+
+        const clampVolume = (value, fallback = 0.28) => {
+          const volume = Number(value);
+          if (!Number.isFinite(volume)) return fallback;
+          return Math.min(1, Math.max(0, volume));
+        };
+
+        const saveMusicState = () => {
+          const currentTrack = player.tracks[player.index];
+          if (!currentTrack) return;
+          localStorage.setItem(
+            musicCacheKey,
+            JSON.stringify({
+              trackId: currentTrack.id,
+              currentTime: audio.currentTime || 0,
+              volume: audio.volume,
+              paused: player.pendingAutoplay ? false : audio.paused,
+              updatedAt: Date.now()
+            })
+          );
+        };
+
+        const queryElements = () => {
+          player.elements = {
+            toggle: document.querySelector("[data-music-toggle]"),
+            prev: document.querySelector("[data-music-prev]"),
+            next: document.querySelector("[data-music-next]"),
+            volume: document.querySelector("[data-music-volume]"),
+            seek: document.querySelector("[data-music-seek]"),
+            track: document.querySelector(".music-track"),
+            current: document.querySelector("[data-music-current]"),
+            duration: document.querySelector("[data-music-duration]"),
+            note: document.querySelector("[data-music-note]")
+          };
+        };
+
+        const updateMusicUi = () => {
+          queryElements();
+          const { toggle, volume, seek, track, current, duration, note } = player.elements;
+          const currentTrack = player.tracks[player.index];
+          if (track) {
+            const nextTitle = currentTrack?.title ?? "Mikan Radio";
+            if (track.textContent !== nextTitle) {
+              track.classList.add("is-swapping");
+              void track.offsetWidth;
+              track.textContent = nextTitle;
+              track.classList.remove("is-swapping");
+            }
+          }
+          if (current) current.textContent = formatAudioTime(audio.currentTime);
+          if (duration) duration.textContent = formatAudioTime(audio.duration);
+          if (seek && !player.seeking) {
+            const progress = audio.duration ? (audio.currentTime / audio.duration) * 100 : 0;
+            seek.value = String(progress || 0);
+          }
+          if (volume) volume.value = String(audio.volume || 0.28);
+          if (toggle) toggle.textContent = audio.paused ? "▶" : "Ⅱ";
+          if (note && player.tracks.length) note.textContent = `${player.index + 1} / ${player.tracks.length}`;
+          document.body.classList.toggle("is-music-playing", !audio.paused);
+        };
+
+        const loadMusicTrack = (index, { keepTime = 0, autoplay = false, persist = true } = {}) => {
+          if (!player.tracks.length) return;
+          player.index = (index + player.tracks.length) % player.tracks.length;
+          const track = player.tracks[player.index];
+          const nextSrc = new URL(track.src, window.location.origin).href;
+          if (audio.src !== nextSrc) {
+            audio.src = track.src;
+            audio.load();
+          }
+          const cached = getMusicState();
+          audio.volume = Number.isFinite(cached.volume)
+            ? clampVolume(cached.volume)
+            : clampVolume(player.elements.volume?.value, audio.volume || 0.28);
+          audio.addEventListener(
+            "loadedmetadata",
+            async () => {
+              if (keepTime > 0 && keepTime < audio.duration - 1) audio.currentTime = keepTime;
+              updateMusicUi();
+              if (autoplay) {
+                try {
+                  await audio.play();
+                  player.pendingAutoplay = false;
+                } catch {
+                  player.pendingAutoplay = true;
+                  if (player.elements.note) player.elements.note.textContent = "浏览器需要你点一下播放。";
+                }
+                updateMusicUi();
+              }
+            },
+            { once: true }
+          );
+          updateMusicUi();
+          if (persist) saveMusicState();
+        };
+
+        const initMusicPlayer = async () => {
+          queryElements();
+          if (player.initialized) {
+            updateMusicUi();
+            return;
+          }
+
+          try {
+            const response = await fetch("/themes/fuyukawa-kagari/music/manifest.json", { cache: "no-cache" });
+            player.tracks = await response.json();
+          } catch {
+            player.tracks = [];
+          }
+
+          if (!player.tracks.length) {
+            if (player.elements.track) player.elements.track.textContent = "暂无歌曲";
+            if (player.elements.note) player.elements.note.textContent = "请把 MP3 放入 MUSIC 文件夹。";
+            return;
+          }
+
+          const cached = getMusicState();
+          const cachedIndex = player.tracks.findIndex((track) => track.id === cached.trackId);
+          player.index = cachedIndex >= 0 ? cachedIndex : 0;
+          audio.volume = Number.isFinite(cached.volume) ? clampVolume(cached.volume) : clampVolume(player.elements.volume?.value);
+          player.restoreAutoplay = cached.paused === false && (isMusicAutoplayEnabled() || isMusicSessionAutoplayEnabled());
+          player.pendingAutoplay = player.restoreAutoplay;
+          loadMusicTrack(player.index, {
+            keepTime: Number(cached.currentTime ?? 0),
+            autoplay: false,
+            persist: false
+          });
+          if (player.restoreAutoplay && player.elements.note) {
+            player.elements.note.textContent = "已恢复进度，点击播放继续。";
+          }
+          player.initialized = true;
+        };
+
+        player.bind = () => {
+          queryElements();
+          player.controlAbort?.abort();
+          player.controlAbort = new AbortController();
+          const listenerOptions = { signal: player.controlAbort.signal };
+
+          player.elements.toggle?.addEventListener("click", async () => {
+            if (!player.tracks.length) return;
+            if (audio.paused) {
+              try {
+                await audio.play();
+                setMusicSessionAutoplayEnabled(true);
+                player.pendingAutoplay = false;
+              } catch {
+                player.pendingAutoplay = true;
+                if (player.elements.note) player.elements.note.textContent = "浏览器拦截了自动播放，请再点一次。";
+              }
+            } else {
+              audio.pause();
+              setMusicSessionAutoplayEnabled(false);
+              player.pendingAutoplay = false;
+            }
+            updateMusicUi();
+            saveMusicState();
+          }, listenerOptions);
+
+          player.elements.prev?.addEventListener("click", () => {
+            loadMusicTrack(player.index - 1, { autoplay: !audio.paused });
+          }, listenerOptions);
+
+          player.elements.next?.addEventListener("click", () => {
+            loadMusicTrack(player.index + 1, { autoplay: !audio.paused });
+          }, listenerOptions);
+
+          player.elements.volume?.addEventListener("input", () => {
+            audio.volume = Number(player.elements.volume.value);
+            saveMusicState();
+            updateMusicUi();
+          }, listenerOptions);
+
+          player.elements.seek?.addEventListener("input", () => {
+            player.seeking = true;
+            if (!audio.duration) return;
+            const target = (Number(player.elements.seek.value) / 100) * audio.duration;
+            if (player.elements.current) player.elements.current.textContent = formatAudioTime(target);
+          }, listenerOptions);
+
+          player.elements.seek?.addEventListener("change", () => {
+            if (audio.duration) {
+              audio.currentTime = (Number(player.elements.seek.value) / 100) * audio.duration;
+            }
+            player.seeking = false;
+            updateMusicUi();
+            saveMusicState();
+          }, listenerOptions);
+
+          player.audioAbort?.abort();
+          player.audioAbort = new AbortController();
+          const audioListenerOptions = { signal: player.audioAbort.signal };
+
+          const tryResumeAfterRefresh = async () => {
+            if (!player.pendingAutoplay || !audio.paused || !player.tracks.length) return;
+            try {
+              await audio.play();
+              setMusicSessionAutoplayEnabled(true);
+              player.pendingAutoplay = false;
+              player.unlockAbort?.abort();
+              updateMusicUi();
+              saveMusicState();
+            } catch {
+              if (player.elements.note) player.elements.note.textContent = "浏览器需要一次交互后才能续播。";
+            }
+          };
+
+          player.unlockAbort?.abort();
+          player.unlockAbort = new AbortController();
+          const unlockOptions = { signal: player.unlockAbort.signal, passive: true };
+          ["pointerdown", "keydown", "wheel", "touchstart"].forEach((eventName) => {
+            window.addEventListener(eventName, tryResumeAfterRefresh, unlockOptions);
+          });
+
+          audio.addEventListener("timeupdate", () => {
+            updateMusicUi();
+            saveMusicState();
+          }, audioListenerOptions);
+          audio.addEventListener("play", () => {
+            setMusicSessionAutoplayEnabled(true);
+            player.pendingAutoplay = false;
+            updateMusicUi();
+            saveMusicState();
+          }, audioListenerOptions);
+          audio.addEventListener("pause", () => {
+            if (!player.pendingAutoplay) setMusicSessionAutoplayEnabled(false);
+            updateMusicUi();
+            saveMusicState();
+          }, audioListenerOptions);
+          audio.addEventListener("ended", () => {
+            loadMusicTrack(player.index + 1, { autoplay: true });
+          }, audioListenerOptions);
+          window.addEventListener("pagehide", saveMusicState, listenerOptions);
+          updateMusicUi();
+        };
+
+        player.init = initMusicPlayer;
+        player.update = updateMusicUi;
+        player.isAutoplayEnabled = isMusicAutoplayEnabled;
+        player.setAutoplayEnabled = setMusicAutoplayEnabled;
+        return player;
+      };
+
+      window.__yuimiRadio ??= createYuimiRadio();
+      window.__yuimiRadio.bind();
+      window.__yuimiRadio.init();
+      document.addEventListener("astro:page-load", () => {
+        window.__yuimiRadio?.bind();
+        window.__yuimiRadio?.init();
+      });
+
+      const sakuraStateKey = "yuimi-sakura-enabled-v1";
+      const getContextMenu = () => document.querySelector("[data-context-menu]");
+      let contextMenuReturnFocus = null;
+      const hideContextMenu = () => {
+        const contextMenu = getContextMenu();
+        const shouldRestoreFocus = contextMenu?.contains(document.activeElement);
+        contextMenu?.classList.remove("is-open");
+        if (shouldRestoreFocus && contextMenuReturnFocus instanceof HTMLElement) {
+          contextMenuReturnFocus.focus({ preventScroll: true });
+        }
+      };
+      const isSakuraEnabled = () => localStorage.getItem(sakuraStateKey) !== "0";
+      const setSakuraEnabled = (enabled) => {
+        localStorage.setItem(sakuraStateKey, enabled ? "1" : "0");
+        document.body.classList.toggle("hide-sakura", !enabled);
+      };
+      const updateContextToggleLabels = () => {
+        const contextMenu = getContextMenu();
+        const sakuraButton = contextMenu?.querySelector('[data-context-action="sakura"]');
+        const musicAutoplayButton = contextMenu?.querySelector('[data-context-action="music-autoplay"]');
+        const currentTheme = window.__yuimiTheme?.current ?? "fuyukawa-kagari";
+        const sakuraEnabled = isSakuraEnabled();
+        const musicAutoplayEnabled = window.__yuimiRadio?.isAutoplayEnabled?.() ?? false;
+        if (sakuraButton) {
+          sakuraButton.textContent = sakuraEnabled ? "❄ 雪花：开" : "❄ 雪花：关";
+          sakuraButton.setAttribute("aria-pressed", String(sakuraEnabled));
+        }
+        if (musicAutoplayButton) {
+          musicAutoplayButton.textContent = musicAutoplayEnabled ? "♫ 进站续播：开" : "♫ 进站续播：关";
+          musicAutoplayButton.setAttribute("aria-pressed", String(musicAutoplayEnabled));
+        }
+        contextMenu?.querySelectorAll("[data-theme-select]").forEach((button) => {
+          const isCurrent = button.dataset.themeSelect === currentTheme;
+          button.setAttribute("aria-pressed", String(isCurrent));
+          const mark = button.querySelector(".context-theme-mark");
+          if (mark) mark.textContent = isCurrent ? "●" : "○";
+        });
+      };
+
+      setSakuraEnabled(isSakuraEnabled());
+      updateContextToggleLabels();
+      window.addEventListener("yuimi:music-autoplay-change", updateContextToggleLabels);
+
+      const showContextMenuAt = (clientX, clientY, focusFirst = false) => {
+        const contextMenu = getContextMenu();
+        if (!contextMenu) return false;
+        if (!contextMenu.contains(document.activeElement)) {
+          const activeElement = document.activeElement;
+          contextMenuReturnFocus = activeElement instanceof HTMLElement && activeElement !== document.body
+            ? activeElement
+            : document.querySelector(".quick-action--theme");
+        }
+        updateContextToggleLabels();
+        const menuWidth = contextMenu.offsetWidth;
+        const menuHeight = contextMenu.offsetHeight;
+        const x = Math.min(clientX, window.innerWidth - menuWidth - 12);
+        const y = Math.min(clientY, window.innerHeight - menuHeight - 12);
+        contextMenu.style.setProperty("--menu-x", `${Math.max(12, x)}px`);
+        contextMenu.style.setProperty("--menu-y", `${Math.max(12, y)}px`);
+        contextMenu.classList.add("is-open");
+        if (focusFirst) contextMenu.querySelector("button")?.focus({ preventScroll: true });
+        return true;
+      };
+
+      window.addEventListener("contextmenu", (event) => {
+        event.preventDefault();
+        showContextMenuAt(event.clientX, event.clientY);
+      });
+      window.addEventListener("yuimi:context-menu-request", (event) => {
+        if (!(event instanceof CustomEvent)) return;
+        const x = Number(event.detail?.clientX);
+        const y = Number(event.detail?.clientY);
+        showContextMenuAt(
+          Number.isFinite(x) ? x : window.innerWidth / 2,
+          Number.isFinite(y) ? y : window.innerHeight / 2
+        );
+      });
+      window.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") hideContextMenu();
+        if (event.key === "ContextMenu" || (event.key === "F10" && event.shiftKey)) {
+          event.preventDefault();
+          const activeRect = document.activeElement?.getBoundingClientRect?.();
+          const x = activeRect ? activeRect.left + Math.min(activeRect.width, 28) : window.innerWidth / 2;
+          const y = activeRect ? activeRect.top + Math.min(activeRect.height, 28) : window.innerHeight / 2;
+          showContextMenuAt(x, y, true);
+        }
+      });
+      window.addEventListener("click", async (event) => {
+        const contextMenu = getContextMenu();
+        const target = event.target instanceof Element ? event.target : null;
+        const themeButton = target?.closest("[data-theme-select]");
+        if (themeButton) {
+          event.stopPropagation();
+          hideContextMenu();
+          window.__yuimiTheme?.select(themeButton.dataset.themeSelect);
+          return;
+        }
+
+        const button = target?.closest("[data-context-action]");
+        if (!button || !contextMenu?.contains(button)) {
+          hideContextMenu();
+          return;
+        }
+
+        event.stopPropagation();
+        const action = button.dataset.contextAction;
+        if (action === "top") window.scrollTo({ top: 0, behavior: "smooth" });
+        if (action === "refresh") window.location.reload();
+        if (action === "home") window.location.href = "/";
+        if (action === "back") history.back();
+        if (action === "forward") history.forward();
+        if (action === "copy") {
+          await navigator.clipboard?.writeText(window.location.href);
+          button.textContent = "\u2713 \u94fe\u63a5\u5df2\u590d\u5236";
+          window.setTimeout(() => {
+            button.textContent = "\u29c9 \u590d\u5236\u94fe\u63a5";
+          }, 1200);
+        }
+        if (action === "title") {
+          await navigator.clipboard?.writeText(document.title);
+          button.textContent = "\u2713 \u6807\u9898\u5df2\u590d\u5236";
+          window.setTimeout(() => {
+            button.textContent = "T \u590d\u5236\u6807\u9898";
+          }, 1200);
+        }
+        if (action === "sakura") {
+          setSakuraEnabled(!isSakuraEnabled());
+          updateContextToggleLabels();
+        }
+        if (action === "music-autoplay") {
+          const nextEnabled = !(window.__yuimiRadio?.isAutoplayEnabled?.() ?? false);
+          window.__yuimiRadio?.setAutoplayEnabled?.(nextEnabled);
+          updateContextToggleLabels();
+        }
+        hideContextMenu();
+      });
+
+      const enhanceCodeBlocks = () => {
+        document.querySelectorAll(".prose pre:not(.expressive-code pre)").forEach((pre) => {
+          if (pre.querySelector(".code-block-copy")) return;
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "code-block-copy";
+          button.textContent = "⧉ Copy";
+          button.setAttribute("aria-label", "复制代码");
+          button.addEventListener("click", async () => {
+            const code = pre.querySelector("code");
+            if (!code) return;
+            try {
+              await navigator.clipboard.writeText(code.textContent ?? "");
+              button.textContent = "✓ Copied";
+              button.classList.add("copied");
+              window.setTimeout(() => {
+                button.textContent = "⧉ Copy";
+                button.classList.remove("copied");
+              }, 1200);
+            } catch {
+              button.textContent = "Failed";
+              window.setTimeout(() => {
+                button.textContent = "⧉ Copy";
+              }, 1200);
+            }
+          });
+          pre.appendChild(button);
+        });
+      };
+
+      enhanceCodeBlocks();
+      window.addEventListener("load", enhanceCodeBlocks);
+      document.addEventListener("astro:page-load", enhanceCodeBlocks);
+    </script>
+  </body>
+</html>

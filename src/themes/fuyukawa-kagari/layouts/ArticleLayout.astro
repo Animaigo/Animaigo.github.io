@@ -1,0 +1,37 @@
+---
+import BaseLayout from "./BaseLayout.astro";
+import ReadingRail from "@/core/ReadingRail.astro";
+import { categoryLabel } from "@/lib/site";
+
+const { frontmatter } = Astro.props;
+const title = `${frontmatter.seoTitle ?? frontmatter.title} | Mikan KenkyuuSho`;
+const description = frontmatter.seoDescription ?? frontmatter.description;
+const date = new Intl.DateTimeFormat("zh-CN", {
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit"
+}).format(frontmatter.pubDate);
+---
+
+<BaseLayout title={title} description={description} isArticlePage article={frontmatter}>
+  <div class="article-shell">
+    <article class="article" data-pagefind-body data-reader-article>
+      <header class="article-header">
+        <div class="meta-row">
+          <span>{categoryLabel[frontmatter.category]}</span>
+          <time datetime={frontmatter.pubDate.toISOString()}>{date}</time>
+        </div>
+        <h1>{frontmatter.title}</h1>
+        <p>{frontmatter.description}</p>
+        <div class="tag-row" aria-label="Tags">
+          {frontmatter.tags.map((tag: string) => <span>#{tag}</span>)}
+        </div>
+      </header>
+      <div class="prose">
+        <slot />
+      </div>
+    </article>
+  </div>
+
+  <ReadingRail />
+</BaseLayout>
