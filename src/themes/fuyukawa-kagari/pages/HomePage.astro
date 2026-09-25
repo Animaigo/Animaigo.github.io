@@ -1392,6 +1392,8 @@ const fallingTags = [
 
     const handleHeroScroll = () => {
       if (!stage || !hero) return;
+      // 触屏设备 hero 为 relative（非 sticky），无需变暗/停靠计算，跳过以减少重排。
+      if (window.matchMedia("(pointer: coarse)").matches) return;
 
       const nativeProgress = clamp(-stage.getBoundingClientRect().top / (window.innerHeight || 1));
       hero.style.setProperty("--hero-dim", `${0.12 + clamp((nativeProgress - 1.05) / 0.25) * 0.12}`);
@@ -1461,6 +1463,8 @@ const fallingTags = [
 
     const siteHeader = document.querySelector(".site-header");
     const homeContentBg = document.querySelector(".home-content-bg");
+    // 触屏设备（手机/平板）导航栏已常驻，无需滚动钉住逻辑，直接跳过以避免每次滚动的强制重排。
+    const coarsePointer = window.matchMedia("(pointer: coarse)");
     let navPinFrame = 0;
     const syncNavPin = () => {
       navPinFrame = 0;
@@ -1469,12 +1473,13 @@ const fallingTags = [
       siteHeader.classList.toggle("is-nav-pinned", homeContentBg.getBoundingClientRect().top <= 60);
     };
     const scheduleNavPin = () => {
+      if (coarsePointer.matches) return;
       if (navPinFrame) return;
       navPinFrame = window.requestAnimationFrame(syncNavPin);
     };
 
     if (siteHeader && homeContentBg) {
-      syncNavPin();
+      if (!coarsePointer.matches) syncNavPin();
       window.addEventListener("scroll", scheduleNavPin, { passive: true });
       window.addEventListener("resize", scheduleNavPin);
       window.addEventListener("pageshow", scheduleNavPin);

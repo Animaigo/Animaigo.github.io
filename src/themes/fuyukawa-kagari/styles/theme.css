@@ -2144,6 +2144,14 @@ html[data-color-mode="dark"] .quick-action--mode {
   line-height: 0.98;
 }
 
+@supports not (-webkit-background-clip: text) {
+  .hero h1 {
+    color: #f7b7c8;
+    -webkit-text-fill-color: #f7b7c8;
+    background: none;
+  }
+}
+
 .hero h1::before {
   position: absolute;
   inset: 0;
@@ -5606,10 +5614,29 @@ html[data-yuimi-performance="lite"] #waifu.is-summoned {
 
 @media (max-width: 940px) {
   .site-header {
+    position: fixed;
+    top: 0;
     grid-template-columns: 1fr;
     justify-items: center;
     gap: 12px;
     padding: 12px 14px;
+  }
+
+  .has-page-surface main {
+    padding-top: 84px;
+  }
+
+  .back-bar {
+    position: fixed;
+    top: 88px;
+    left: 14px;
+    z-index: 21;
+    width: auto;
+    margin: 0;
+  }
+
+  .back-button {
+    box-shadow: 0 8px 20px rgba(67, 82, 106, 0.18);
   }
 
   .brand {
@@ -5624,7 +5651,7 @@ html[data-yuimi-performance="lite"] #waifu.is-summoned {
   .toy-dock {
     top: 112px;
     width: 388px;
-    transform: translateX(-346px);
+    transform: translateX(-364px);
   }
 
   .toy-dock:hover,
@@ -5697,12 +5724,14 @@ html[data-yuimi-performance="lite"] #waifu.is-summoned {
   }
 
   .hero {
+    position: relative;
+    top: auto;
     min-height: 100vh;
     min-height: 100svh;
     min-height: 100dvh;
     height: 100svh;
     height: 100dvh;
-    padding-top: 96px;
+    padding-top: 132px;
     padding-bottom: 72px;
     background-position: 58% center;
   }
