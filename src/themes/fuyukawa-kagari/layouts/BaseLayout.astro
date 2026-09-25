@@ -217,7 +217,6 @@ const themedNotFoundRedirectScript = `(() => {
       <footer class="site-footer" data-footer-timers>
         <div class="footer-inner">
           <p class="footer-signature-line">© 2026 BY Reisen⁴ / Mikan KenkyuuSho</p>
-          <p>记录日常，也收藏那些由一串串奇迹连结而成的时刻。</p>
           <p>📈 本站总访问：<span class="footer-counter" data-visit-total>—</span> 次</p>
           <p>📅 今天你是第 <span class="footer-counter" data-visit-today>—</span> 位来访者</p>
           <p>🌸 Mikan KenkyuuSho 已落地：<time data-elapsed-from="2026-09-01T00:00:00+08:00" data-elapsed-mode="second">计算中...</time></p>
@@ -337,14 +336,29 @@ const themedNotFoundRedirectScript = `(() => {
       };
 
       const hitVisitCounter = async (key) => {
-        const response = await fetch(`https://abacus.jasoncameron.dev/hit/${visitNamespace}/${key}`, {
-          cache: "no-store"
-        });
-        if (!response.ok) throw new Error(`visit counter ${response.status}`);
-        const data = await response.json();
-        const value = Number(data?.value);
-        if (!Number.isFinite(value)) throw new Error("visit counter payload");
-        return value;
+        const fetchOnce = async () => {
+          const controller = new AbortController();
+          const timer = window.setTimeout(() => controller.abort(), 5000);
+          try {
+            const response = await fetch(`https://abacus.jasoncameron.dev/hit/${visitNamespace}/${key}`, {
+              cache: "no-store",
+              signal: controller.signal
+            });
+            if (!response.ok) throw new Error(`visit counter ${response.status}`);
+            const data = await response.json();
+            const value = Number(data?.value);
+            if (!Number.isFinite(value)) throw new Error("visit counter payload");
+            return value;
+          } finally {
+            window.clearTimeout(timer);
+          }
+        };
+        // 失败重试一次，规避境外服务偶发抖动导致的长期占位符
+        try {
+          return await fetchOnce();
+        } catch {
+          return await fetchOnce();
+        }
       };
 
       const initVisitStats = async () => {
