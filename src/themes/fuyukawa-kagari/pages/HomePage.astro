@@ -527,6 +527,37 @@ const fallingTags = [
         return getFallbackIpLocation(signal);
       };
 
+      const getBrowserLocation = () => new Promise((resolve, reject) => {
+        if (!("geolocation" in navigator)) {
+          reject(new Error("Geolocation unsupported"));
+          return;
+        }
+        navigator.geolocation.getCurrentPosition(
+          (position) => resolve({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude
+          }),
+          (error) => reject(new Error(error?.message || "Geolocation denied")),
+          { enableHighAccuracy: false, timeout: 6000, maximumAge: 10 * 60 * 1000 }
+        );
+      });
+
+      const reverseGeocode = async (latitude, longitude, signal) => {
+        // 免费逆地理（无需 key），把经纬度反查成"省份 城市"
+        const url = new URL("https://api.bigdatacloud.net/data/reverse-geocode-client");
+        url.searchParams.set("latitude", String(latitude));
+        url.searchParams.set("longitude", String(longitude));
+        url.searchParams.set("localityLanguage", "zh");
+        const response = await fetchWithTimeout(url, {}, 3800, signal);
+        if (!response.ok) throw new Error("Reverse geocode failed");
+        const data = await response.json();
+        const parts = [data.principalSubdivision, data.city, data.locality]
+          .filter(Boolean)
+          .filter((item, index, list) => list.indexOf(item) === index);
+        const place = parts.join(" ") || "本地时区";
+        return { place, latitude, longitude };
+      };
+
       const getTimezoneLocation = () => {
         const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Shanghai";
         const presets = {
@@ -554,12 +585,22 @@ const fallingTags = [
         const signal = weatherController.signal;
         weatherTarget.textContent = "定位电波接收中...";
         let location;
+        const fullProfile = performanceProfile === "full" && !constrainedNetwork;
         try {
-          location = performanceProfile === "full" && !constrainedNetwork
-            ? await getIpLocation(signal)
-            : getTimezoneLocation();
+          if (fullProfile) {
+            // 优先浏览器精确定位（GPS/WiFi），拿到经纬度后逆地理反查城市名
+            const coords = await getBrowserLocation();
+            location = await reverseGeocode(coords.latitude, coords.longitude, signal);
+          } else {
+            location = getTimezoneLocation();
+          }
         } catch {
-          location = getTimezoneLocation();
+          // 浏览器定位被拒/失败时，回落到 IP 定位；IP 也不通则用时区兜底
+          try {
+            location = fullProfile ? await getIpLocation(signal) : getTimezoneLocation();
+          } catch {
+            location = getTimezoneLocation();
+          }
         }
 
         try {

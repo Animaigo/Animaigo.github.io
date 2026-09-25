@@ -98,7 +98,10 @@ const nowDoing = currentSignals;
 
       <a class="me-more-link" href={getThemePath("fuyukawa-kagari", "/anime/")}>
         <Icon name="tabler:movie" aria-hidden="true" />
-        <span class="me-more-link-label" transition:name="anime-title">Anime</span>
+        <span class="me-more-link-copy">
+          <span class="me-more-link-label" transition:name="anime-title">Anime</span>
+          <span class="me-more-link-sub">与 bangumi 连结</span>
+        </span>
         <em>{bangumiItems.length > 0 ? `${bangumiItems.length} 部` : "尚未同步"}</em>
         <span class="me-more-link-arrow" aria-hidden="true">
           <Icon name="tabler:arrow-right" />
@@ -758,10 +761,23 @@ const nowDoing = currentSignals;
       color: var(--pink);
     }
 
+    .me-more-link-copy {
+      display: grid;
+      gap: 3px;
+      line-height: 1.25;
+    }
+
     .me-more-link-label {
+      font-size: 1.22rem;
       text-decoration: underline;
       text-decoration-color: rgba(215, 130, 156, 0.55);
       text-underline-offset: 4px;
+    }
+
+    .me-more-link-sub {
+      color: var(--ink-soft);
+      font-size: 0.78rem;
+      font-weight: 700;
     }
 
     .me-more-link em {
