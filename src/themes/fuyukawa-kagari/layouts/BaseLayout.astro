@@ -217,7 +217,7 @@ const themedNotFoundRedirectScript = `(() => {
       <footer class="site-footer" data-footer-timers>
         <div class="footer-inner">
           <p class="footer-signature-line">© 2026 BY Reisen⁴ / Mikan KenkyuuSho</p>
-          <p>📈 本站总访问：<span class="footer-counter" id="busuanzi_value_site_pv">—</span> 次</p>
+          <p>👥 本站访客：<span class="footer-counter" id="busuanzi_value_site_uv">—</span> 人</p>
           <p>🌸 Mikan KenkyuuSho 已落地：<time data-elapsed-from="2026-09-01T00:00:00+08:00" data-elapsed-mode="second">计算中...</time></p>
           <p class="footer-status-line">snow: falling / mikan-tank: on duty / tea: warm</p>
         </div>
@@ -311,8 +311,8 @@ const themedNotFoundRedirectScript = `(() => {
       window.addEventListener("pageshow", updateFooterTimers);
       document.addEventListener("visibilitychange", scheduleFooterTimers);
 
-      // 访问统计：由不蒜子（busuanzi，国内可访问）提供全站 PV。
-      // 计数写入 #busuanzi_value_site_pv，脚本加载失败时保留占位符「—」。
+      // 访问统计：由不蒜子（busuanzi，国内可访问）提供全站 UV（独立访客，按 Cookie 去重）。
+      // 计数写入 #busuanzi_value_site_uv，脚本加载失败时保留占位符「—」。
       const loadBusuanzi = () => {
         if (document.getElementById("busuanzi-script")) return;
         const script = document.createElement("script");
