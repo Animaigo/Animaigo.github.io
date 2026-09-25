@@ -217,8 +217,7 @@ const themedNotFoundRedirectScript = `(() => {
       <footer class="site-footer" data-footer-timers>
         <div class="footer-inner">
           <p class="footer-signature-line">© 2026 BY Reisen⁴ / Mikan KenkyuuSho</p>
-          <p>📈 本站总访问：<span class="footer-counter" data-visit-total>—</span> 次</p>
-          <p>📅 今天你是第 <span class="footer-counter" data-visit-today>—</span> 位来访者</p>
+          <p>📈 本站总访问：<span class="footer-counter" id="busuanzi_value_site_pv">—</span> 次</p>
           <p>🌸 Mikan KenkyuuSho 已落地：<time data-elapsed-from="2026-09-01T00:00:00+08:00" data-elapsed-mode="second">计算中...</time></p>
           <p class="footer-status-line">snow: falling / mikan-tank: on duty / tea: warm</p>
         </div>
@@ -312,83 +311,18 @@ const themedNotFoundRedirectScript = `(() => {
       window.addEventListener("pageshow", updateFooterTimers);
       document.addEventListener("visibilitychange", scheduleFooterTimers);
 
-      // 访问统计：总访问量与「今天第几位来访者」，由第三方计数服务维护。
-      // 每次会话只计一次；服务不可用时展示缓存值（没有缓存则显示占位符）。
-      const visitCacheKey = "mikan-visit-stats-v1";
-      const visitSessionKey = "mikan-visit-counted-v1";
-      const isLocalVisitHost = ["localhost", "127.0.0.1", "::1", ""].includes(window.location.hostname);
-      // 本地预览走独立命名空间，避免把开发访问混进真实统计
-      const visitNamespace = isLocalVisitHost ? "mikan-blog-dev-probe" : "mikan-fuyukawa-blog";
-
-      const readVisitCache = () => {
-        try {
-          return JSON.parse(window.localStorage.getItem(visitCacheKey) || "{}");
-        } catch {
-          return {};
-        }
+      // 访问统计：由不蒜子（busuanzi，国内可访问）提供全站 PV。
+      // 计数写入 #busuanzi_value_site_pv，脚本加载失败时保留占位符「—」。
+      const loadBusuanzi = () => {
+        if (document.getElementById("busuanzi-script")) return;
+        const script = document.createElement("script");
+        script.id = "busuanzi-script";
+        script.async = true;
+        script.src = "https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js";
+        document.head.appendChild(script);
       };
 
-      const renderVisitStats = (stats = {}) => {
-        const total = document.querySelector("[data-visit-total]");
-        const today = document.querySelector("[data-visit-today]");
-        if (total) total.textContent = Number.isFinite(stats.total) ? stats.total.toLocaleString("zh-CN") : "—";
-        if (today) today.textContent = Number.isFinite(stats.today) ? stats.today.toLocaleString("zh-CN") : "—";
-      };
-
-      const hitVisitCounter = async (key) => {
-        const fetchOnce = async () => {
-          const controller = new AbortController();
-          const timer = window.setTimeout(() => controller.abort(), 5000);
-          try {
-            const response = await fetch(`https://abacus.jasoncameron.dev/hit/${visitNamespace}/${key}`, {
-              cache: "no-store",
-              signal: controller.signal
-            });
-            if (!response.ok) throw new Error(`visit counter ${response.status}`);
-            const data = await response.json();
-            const value = Number(data?.value);
-            if (!Number.isFinite(value)) throw new Error("visit counter payload");
-            return value;
-          } finally {
-            window.clearTimeout(timer);
-          }
-        };
-        // 失败重试一次，规避境外服务偶发抖动导致的长期占位符
-        try {
-          return await fetchOnce();
-        } catch {
-          return await fetchOnce();
-        }
-      };
-
-      const initVisitStats = async () => {
-        renderVisitStats(readVisitCache());
-        try {
-          if (window.sessionStorage.getItem(visitSessionKey) === "1") return;
-        } catch {
-          /* sessionStorage 不可用时继续计数 */
-        }
-        try {
-          const day = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Shanghai" });
-          const [total, today] = await Promise.all([hitVisitCounter("total"), hitVisitCounter(`day-${day}`)]);
-          const stats = { total, today, day };
-          try {
-            window.localStorage.setItem(visitCacheKey, JSON.stringify(stats));
-          } catch {
-            /* 忽略存储失败 */
-          }
-          try {
-            window.sessionStorage.setItem(visitSessionKey, "1");
-          } catch {
-            /* 忽略存储失败 */
-          }
-          renderVisitStats(stats);
-        } catch {
-          /* 计数服务不可达时保留缓存值或占位符 */
-        }
-      };
-
-      initVisitStats();
+      loadBusuanzi();
 
       let toyDockCloseTimer = 0;
       const getToyDock = () => document.querySelector(".toy-dock");
