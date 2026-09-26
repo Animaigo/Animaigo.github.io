@@ -416,28 +416,14 @@ const themedNotFoundRedirectScript = `(() => {
       if (navCoarse.matches) {
         let navRevealStamp = 0; // 最近一次「唤起」的时间戳（用于隔离同一次点按的 click 余波）
 
-        // 判定一次点按是否落在「导航栏可点区域」：
-        // 隐藏态 header top:-78px，其底部 + 圆条(::before, bottom:-14px, 高6px)露在屏幕顶部。
-        // header 实际高度随设备/字体变化（实测 80~96px），故用 rect.bottom 动态跟随，
-        // 再往下留 24px 余量覆盖圆条（圆条底边在 rect.bottom+14，+24 稳妥）。
-        const hitNavArea = (clientX, clientY) => {
-          const navHeader = getNavHeader();
-          if (!navHeader) return false;
-          const rect = navHeader.getBoundingClientRect();
-          const expand = navHeader.classList.contains("is-nav-pinned") ? 0 : 24;
-          return (
-            clientX >= rect.left &&
-            clientX <= rect.right &&
-            clientY >= rect.top - expand &&
-            clientY <= rect.bottom + expand
-          );
-        };
-
         // 点导航栏（圆条或常驻栏）→ 常驻，并打上唤起锁
+        // 注意：圆条 ::before 是 header 的伪元素，点击它 event.target 仍是 header 本身，
+        // 故 contains(target) 可靠（伪元素不产生独立 target）。
         document.addEventListener("pointerdown", (event) => {
-          if (!hitNavArea(event.clientX, event.clientY)) return;
+          const target = event.target instanceof Element ? event.target : null;
           const navHeader = getNavHeader();
-          const wasHidden = !navHeader?.classList.contains("is-nav-pinned");
+          if (!navHeader || !target || !navHeader.contains(target)) return;
+          const wasHidden = !navHeader.classList.contains("is-nav-pinned");
           showNavPinned();
           if (wasHidden) {
             // 从隐藏态唤起：锁住后续 click，防止上抬后链接位移到手指下方误跳页
@@ -460,10 +446,12 @@ const themedNotFoundRedirectScript = `(() => {
 
         // 点页面别处（非导航栏、非播放器）→ 收起导航
         document.addEventListener("pointerdown", (event) => {
+          const target = event.target instanceof Element ? event.target : null;
+          if (!target) return;
           const navHeader = getNavHeader();
           const toyDock = getToyDock();
-          if (hitNavArea(event.clientX, event.clientY)) return;
-          if (toyDock && event.target instanceof Element && toyDock.contains(event.target)) return;
+          if (navHeader?.contains(target)) return;
+          if (toyDock?.contains(target)) return;
           hideNavPinned();
         });
       }
