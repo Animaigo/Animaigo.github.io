@@ -327,7 +327,15 @@ const themedNotFoundRedirectScript = `(() => {
         const toyDock = getToyDock();
         return Boolean(toyDock && target instanceof Node && toyDock.contains(target));
       };
+      // 移动端导航栏状态机的启用条件：触摸设备即可。
+      // 不用单一的 pointer:coarse（部分 iOS/微信 WebView 上不可靠），改为多条件兜底：
+      // 粗指针 || 支持触摸 || 多点触控点数>0 || 屏幕宽度落在移动端断点内。
       const navCoarse = window.matchMedia("(pointer: coarse)");
+      const navTouchCapable =
+        navCoarse.matches ||
+        "ontouchstart" in window ||
+        navigator.maxTouchPoints > 0 ||
+        window.matchMedia("(max-width: 940px)").matches;
 
       // 导航栏状态机（手机端）：只有「隐藏」与「常驻(is-nav-pinned)」两态。
       // 驱动：点圆条→常驻；点链接切页→短暂常驻后收起；点遮罩/别处→收起。滚动不参与。
@@ -413,7 +421,7 @@ const themedNotFoundRedirectScript = `(() => {
       // 关键：唤起（pointerdown 上抬）与跳页/收起（click 命中）是同一次点按的两个阶段，
       // 若不做隔离，上抬后链接/内容位移到手指下方，会误触发跳页或立即收起。
       // 因此用「唤起锁」：唤起后短暂窗口内忽略来自同一手势的 click，避免竞争。
-      if (navCoarse.matches) {
+      if (navTouchCapable) {
         let navRevealStamp = 0; // 最近一次「唤起」的时间戳（用于隔离同一次点按的 click 余波）
 
         // 点导航栏（圆条或常驻栏）→ 常驻，并打上唤起锁
@@ -458,13 +466,13 @@ const themedNotFoundRedirectScript = `(() => {
 
       // 切页后：短暂常驻（让用户看到到达目标页），随后上拉收起。
       document.addEventListener("astro:page-load", () => {
-        if (!navCoarse.matches) return;
+        if (!navTouchCapable) return;
         // 新页面浮现：先常驻，短暂后收起
         showNavPinned();
         unpinNavSoon(600);
       });
       document.addEventListener("astro:after-swap", () => {
-        if (!navCoarse.matches) return;
+        if (!navTouchCapable) return;
         showNavPinned();
         unpinNavSoon(600);
       });
