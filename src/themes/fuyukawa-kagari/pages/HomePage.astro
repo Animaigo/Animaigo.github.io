@@ -1461,34 +1461,6 @@ const fallingTags = [
       pokeAvatar?.removeEventListener("dblclick", handlePokeDoubleClick);
     });
 
-    const siteHeader = document.querySelector(".site-header");
-    const homeContentBg = document.querySelector(".home-content-bg");
-    let navPinFrame = 0;
-    const syncNavPin = () => {
-      navPinFrame = 0;
-      if (!siteHeader || !homeContentBg) return;
-      // 取消隐藏的触发点上移一个滚轮格（约 60px）：下半区还差 60px 到顶就把导航常驻
-      siteHeader.classList.toggle("is-nav-pinned", homeContentBg.getBoundingClientRect().top <= 60);
-    };
-    const scheduleNavPin = () => {
-      if (navPinFrame) return;
-      navPinFrame = window.requestAnimationFrame(syncNavPin);
-    };
-
-    if (siteHeader && homeContentBg) {
-      syncNavPin();
-      window.addEventListener("scroll", scheduleNavPin, { passive: true });
-      window.addEventListener("resize", scheduleNavPin);
-      window.addEventListener("pageshow", scheduleNavPin);
-      heroCleanupTasks.push(() => {
-        window.cancelAnimationFrame(navPinFrame);
-        window.removeEventListener("scroll", scheduleNavPin);
-        window.removeEventListener("resize", scheduleNavPin);
-        window.removeEventListener("pageshow", scheduleNavPin);
-        siteHeader.classList.remove("is-nav-pinned");
-      });
-    }
-
     setProgress(0);
     handleHeroScroll();
     window.addEventListener("wheel", handleHeroWheel, { passive: false });

@@ -329,24 +329,32 @@ const themedNotFoundRedirectScript = `(() => {
       };
       const navCoarse = window.matchMedia("(pointer: coarse)");
 
-      // 统一管理「遮罩层」：导航栏/播放器展开时显示，点击遮罩收起两者并阻断下层点击。
+      // 导航栏状态机（手机端）：只有「隐藏」与「常驻(is-nav-pinned)」两态。
+      // 驱动：点圆条→常驻；点链接切页→短暂常驻后收起；点遮罩/别处→收起。滚动不参与。
+      let navUnpinTimer = 0;
+      const showNavPinned = () => {
+        getNavHeader()?.classList.add("is-nav-pinned");
+      };
+      const hideNavPinned = () => {
+        window.clearTimeout(navUnpinTimer);
+        getNavHeader()?.classList.remove("is-nav-pinned");
+      };
+      const unpinNavSoon = (delay = 600) => {
+        window.clearTimeout(navUnpinTimer);
+        navUnpinTimer = window.setTimeout(hideNavPinned, delay);
+      };
+
+      // 遮罩层：播放器展开时显示，点击收起并阻断下层点击（导航栏展开不弹遮罩，导航本身可点）。
       const syncScrim = () => {
         const scrim = getScrim();
         if (!scrim) return;
-        const navHeader = getNavHeader();
-        const toyDock = getToyDock();
-        const navExpanded =
-          navHeader && (navHeader.classList.contains("is-nav-shown") || navHeader.classList.contains("is-nav-pinned"));
-        const toyExpanded = toyDock && toyDock.classList.contains("is-pinned");
-        // 常驻态（is-nav-pinned）不弹遮罩，因为导航栏本就该一直可用。
-        const showScrim = Boolean(navHeader && navHeader.classList.contains("is-nav-shown")) || Boolean(toyExpanded);
+        const toyExpanded = getToyDock()?.classList.contains("is-pinned");
+        const showScrim = Boolean(toyExpanded);
         scrim.classList.toggle("is-active", showScrim);
         scrim.setAttribute("aria-hidden", String(!showScrim));
       };
 
-      // 收起：导航栏去掉 is-nav-shown、播放器去掉 is-pinned，并同步遮罩。
-      const collapseNavAndToy = () => {
-        getNavHeader()?.classList.remove("is-nav-shown");
+      const collapseToy = () => {
         const toyDock = getToyDock();
         if (toyDock) {
           toyDock.classList.remove("is-pinned");
@@ -363,9 +371,6 @@ const themedNotFoundRedirectScript = `(() => {
         const toyDock = getToyDock();
         if (!toyDock) return;
         toyDock.classList.toggle("is-pinned");
-        if (toyDock.classList.contains("is-pinned")) {
-          getNavHeader()?.classList.remove("is-nav-shown");
-        }
         syncScrim();
       });
       document.addEventListener("pointerover", (event) => {
@@ -381,80 +386,71 @@ const themedNotFoundRedirectScript = `(() => {
         }, 180);
       });
 
-      // 遮罩层：点按 → 收起导航栏与播放器（阻断穿透）。
+      // 播放器遮罩：点遮罩 → 收起播放器（阻断穿透）。
       document.addEventListener("pointerdown", (event) => {
         const scrim = getScrim();
         if (!scrim || !scrim.classList.contains("is-active")) return;
-        if (scrim.contains(event.target) || event.target === scrim) {
-          collapseNavAndToy();
-        }
-      });
-      // 兜底：点页面任意位置，若点在遮罩/导航/播放器之外，且不是常驻态，则收起。
-      document.addEventListener("pointerdown", (event) => {
-        const target = event.target instanceof Element ? event.target : null;
-        if (!target) return;
-        const navHeader = getNavHeader();
-        const toyDock = getToyDock();
-        if (navHeader?.contains(target)) return;
-        if (toyDock?.contains(target)) return;
-        const navPinned = navHeader?.classList.contains("is-nav-pinned");
-        if (navPinned) return;
-        collapseNavAndToy();
+        if (scrim.contains(event.target) || event.target === scrim) collapseToy();
       });
 
       // 播放器：滚动/触摸滑动时收起（移动端无 hover）。
       window.addEventListener("scroll", () => {
-        const toyDock = getToyDock();
-        if (toyDock?.classList.contains("is-pinned")) collapseNavAndToy();
+        if (getToyDock()?.classList.contains("is-pinned")) collapseToy();
       }, { passive: true });
       window.addEventListener("touchmove", () => {
-        const toyDock = getToyDock();
-        if (toyDock?.classList.contains("is-pinned")) collapseNavAndToy();
+        if (getToyDock()?.classList.contains("is-pinned")) collapseToy();
       }, { passive: true });
       window.addEventListener("keydown", (event) => {
         if (event.key !== "Escape") return;
-        collapseNavAndToy();
+        collapseToy();
       });
 
-      // 顶部导航栏显隐（桌面端由 CSS :hover 控制，这里只管手机端 + 遮罩同步）：
-      // - 常态上抬隐藏（只露 ::before 圆条）；点圆条唤起；点别处/遮罩收起；
-      // - 滚到内容区顶部由首页 syncNavPin 加 is-nav-pinned 常驻（不弹遮罩）；
-      // - 切换页面后回到常态隐藏。
+      // 顶部导航栏（手机端）：
+      // - 点导航栏（隐藏态露出的圆条，或常驻态）→ 常驻
+      // - 点导航链接 → 切页；新页面浮现后短暂常驻再上拉收起
+      // - 点遮罩外/页面别处 → 收起（隐藏）
       if (navCoarse.matches) {
-        let navJustOpened = 0;
         document.addEventListener("pointerdown", (event) => {
           const target = event.target instanceof Element ? event.target : null;
           const navHeader = getNavHeader();
+          if (!navHeader || !target || !navHeader.contains(target)) return;
+          // 点在导航栏上 → 常驻
+          showNavPinned();
+        });
+        // 点导航链接：记录切页，页面浮现后短暂常驻再收起。
+        document.addEventListener("click", (event) => {
+          const target = event.target instanceof Element ? event.target : null;
+          const navHeader = getNavHeader();
           if (!navHeader || !target) return;
-          // 点在导航栏（含隐藏态露出的小圆条）→ 唤起
-          if (navHeader.contains(target) && !navHeader.classList.contains("is-nav-shown")) {
-            navHeader.classList.add("is-nav-shown");
-            navJustOpened = Date.now();
-            syncScrim();
+          const link = target.closest(".nav-links a, .brand");
+          if (link && navHeader.contains(link)) {
+            // 交给 Astro 路由跳转；page-load 后做短暂常驻。
+            showNavPinned();
           }
         });
-        // 防误触：刚通过圆条唤起导航后，短时间内的 click 若落在导航链接上（导航滑入导致
-        // 原点击位置下移），吞掉这次点击，避免误跳转到其他页面。
-        document.addEventListener(
-          "click",
-          (event) => {
-            if (!navJustOpened || Date.now() - navJustOpened > 360) return;
-            const navHeader = getNavHeader();
-            if (navHeader && navHeader.contains(event.target)) {
-              event.preventDefault();
-              event.stopPropagation();
-            }
-          },
-          true
-        );
+        // 点页面别处（非导航栏、非播放器）→ 收起导航
+        document.addEventListener("pointerdown", (event) => {
+          const target = event.target instanceof Element ? event.target : null;
+          if (!target) return;
+          const navHeader = getNavHeader();
+          const toyDock = getToyDock();
+          if (navHeader?.contains(target)) return;
+          if (toyDock?.contains(target)) return;
+          hideNavPinned();
+        });
       }
+
+      // 切页后：短暂常驻（让用户看到到达目标页），随后上拉收起。
       document.addEventListener("astro:page-load", () => {
-        getNavHeader()?.classList.remove("is-nav-shown");
-        syncScrim();
+        if (!navCoarse.matches) return;
+        // 新页面浮现：先常驻，短暂后收起
+        showNavPinned();
+        unpinNavSoon(600);
       });
       document.addEventListener("astro:after-swap", () => {
-        getNavHeader()?.classList.remove("is-nav-shown");
-        syncScrim();
+        if (!navCoarse.matches) return;
+        showNavPinned();
+        unpinNavSoon(600);
       });
 
       // ===== Live2D 看板娘：已卸载（2026-09-25 起停用，代码保留可恢复）=====

@@ -1660,10 +1660,6 @@ html[data-color-mode="dark"] .quick-action--mode {
 
 .site-header:hover,
 .site-header:focus-within,
-.site-header.is-nav-shown {
-  top: 0;
-}
-
 .site-header.is-nav-pinned {
   top: 0;
 }
@@ -5629,7 +5625,7 @@ html[data-yuimi-performance="lite"] #waifu.is-summoned {
 
 @media (max-width: 940px) {
   .site-header {
-    /* 移动端导航栏默认上抬到屏幕外，只露出底部 ::before 小圆条（可点按唤起） */
+    /* 移动端导航栏：隐藏时上抬到屏幕外，只露底部 ::before 圆条；常驻时 top:0（is-nav-pinned） */
     grid-template-columns: 1fr;
     justify-items: center;
     gap: 10px;
@@ -5638,15 +5634,13 @@ html[data-yuimi-performance="lite"] #waifu.is-summoned {
     top: -78px;
   }
 
-  /* 移动端禁用 hover/focus 显隐（避免点按后 focus 残留钉住），显隐只由 JS 控制 */
+  /* 移动端禁用 hover/focus 显隐，只由 JS 的 is-nav-pinned 控制（避免点按后 focus 残留钉住） */
   .site-header:hover,
   .site-header:focus-within {
     top: -78px;
   }
 
-  /* 常驻：滚到内容区顶部时钉在顶部，之后不再因滑动隐藏 */
-  .site-header.is-nav-pinned,
-  .site-header.is-nav-shown {
+  .site-header.is-nav-pinned {
     top: 0;
   }
 
