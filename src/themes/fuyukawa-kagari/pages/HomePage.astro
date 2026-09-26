@@ -1461,6 +1461,39 @@ const fallingTags = [
       pokeAvatar?.removeEventListener("dblclick", handlePokeDoubleClick);
     });
 
+    // 首页导航栏「滚动常驻」：仅首页，下滑到内容区接近顶部（接近底部）时常驻，滚离即收起。
+    // 用 is-scroll-pinned 标记「滚动常驻」这个强状态，让 BaseLayout 的点别处收起失效（滚动是唯一收起方式）。
+    const siteHeader = document.querySelector(".site-header");
+    const homeContentBg = document.querySelector(".home-content-bg");
+    let navPinFrame = 0;
+    const syncNavPin = () => {
+      navPinFrame = 0;
+      if (!siteHeader || !homeContentBg) return;
+      // 取消隐藏的触发点上移一个滚轮格（约 60px）：下半区还差 60px 到顶就把导航常驻
+      const scrolledToBottom = homeContentBg.getBoundingClientRect().top <= 60;
+      siteHeader.classList.toggle("is-nav-pinned", scrolledToBottom);
+      siteHeader.classList.toggle("is-scroll-pinned", scrolledToBottom);
+    };
+    const scheduleNavPin = () => {
+      if (navPinFrame) return;
+      navPinFrame = window.requestAnimationFrame(syncNavPin);
+    };
+
+    if (siteHeader && homeContentBg) {
+      syncNavPin();
+      window.addEventListener("scroll", scheduleNavPin, { passive: true });
+      window.addEventListener("resize", scheduleNavPin);
+      window.addEventListener("pageshow", scheduleNavPin);
+      heroCleanupTasks.push(() => {
+        window.cancelAnimationFrame(navPinFrame);
+        window.removeEventListener("scroll", scheduleNavPin);
+        window.removeEventListener("resize", scheduleNavPin);
+        window.removeEventListener("pageshow", scheduleNavPin);
+        siteHeader.classList.remove("is-nav-pinned");
+        siteHeader.classList.remove("is-scroll-pinned");
+      });
+    }
+
     setProgress(0);
     handleHeroScroll();
     window.addEventListener("wheel", handleHeroWheel, { passive: false });

@@ -345,7 +345,10 @@ const themedNotFoundRedirectScript = `(() => {
       };
       const hideNavPinned = () => {
         window.clearTimeout(navUnpinTimer);
-        getNavHeader()?.classList.remove("is-nav-pinned");
+        const navHeader = getNavHeader();
+        // 首页「滚动常驻」是强状态：带 is-scroll-pinned 时不收起（只有滚离底部才收）。
+        if (navHeader?.classList.contains("is-scroll-pinned")) return;
+        navHeader?.classList.remove("is-nav-pinned");
       };
       const unpinNavSoon = (delay = 600) => {
         window.clearTimeout(navUnpinTimer);
@@ -474,12 +477,16 @@ const themedNotFoundRedirectScript = `(() => {
       // 切页后：短暂常驻（让用户看到到达目标页），随后上拉收起。
       document.addEventListener("astro:page-load", () => {
         if (!navTouchCapable) return;
+        // 切页即清除旧首页的「滚动常驻」标记，避免 persist 的 header 把状态带到新页面；
+        // 若新页面是首页，其 syncNavPin 会在初始化时按需重新加回。
+        getNavHeader()?.classList.remove("is-scroll-pinned");
         // 新页面浮现：先常驻，短暂后收起
         showNavPinned();
         unpinNavSoon(600);
       });
       document.addEventListener("astro:after-swap", () => {
         if (!navTouchCapable) return;
+        getNavHeader()?.classList.remove("is-scroll-pinned");
         showNavPinned();
         unpinNavSoon(600);
       });
