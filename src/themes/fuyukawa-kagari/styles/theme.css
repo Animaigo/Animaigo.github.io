@@ -1696,6 +1696,22 @@ html[data-color-mode="dark"] .quick-action--mode {
     0 8px 18px rgba(91, 110, 139, 0.2);
 }
 
+/* 导航栏 / 播放器展开时的全屏透明遮罩：点击收起，并阻断点击穿透到下层内容（不阻止滚动） */
+.nav-toy-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 19;
+  background: transparent;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms ease;
+}
+
+.nav-toy-scrim.is-active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 .brand {
   display: inline-flex;
   align-items: center;
@@ -1703,9 +1719,7 @@ html[data-color-mode="dark"] .quick-action--mode {
   min-width: 0;
   color: var(--ink);
   font-weight: 820;
-}
-
-.brand img {
+}.brand img {
   width: 40px;
   height: 36px;
   object-fit: contain;
