@@ -337,22 +337,21 @@ const themedNotFoundRedirectScript = `(() => {
         navigator.maxTouchPoints > 0 ||
         window.matchMedia("(max-width: 940px)").matches;
 
-      // 导航栏状态机（手机端）：只有「隐藏」与「常驻(is-nav-pinned)」两态。
-      // 驱动：点圆条→常驻；点链接切页→短暂常驻后收起；点遮罩/别处→收起。滚动不参与。
+      // 导航栏状态机（手机端）：两个独立类，各司其职：
+      // - is-nav-shown  ：点圆条「临时唤起」（点别处收起）
+      // - is-nav-pinned ：首页「滚到底常驻」（强状态，点别处不收，只有滚离底部才收）
+      // 两者都让 top:0；但收起逻辑只清除 is-nav-shown，永不主动移除 is-nav-pinned（由 HomePage syncNavPin 独占）。
       let navUnpinTimer = 0;
-      const showNavPinned = () => {
-        getNavHeader()?.classList.add("is-nav-pinned");
+      const showNavShown = () => {
+        getNavHeader()?.classList.add("is-nav-shown");
       };
-      const hideNavPinned = () => {
+      const hideNavShown = () => {
         window.clearTimeout(navUnpinTimer);
-        const navHeader = getNavHeader();
-        // 首页「滚动常驻」是强状态：带 is-scroll-pinned 时不收起（只有滚离底部才收）。
-        if (navHeader?.classList.contains("is-scroll-pinned")) return;
-        navHeader?.classList.remove("is-nav-pinned");
+        getNavHeader()?.classList.remove("is-nav-shown");
       };
-      const unpinNavSoon = (delay = 600) => {
+      const hideNavSoon = (delay = 600) => {
         window.clearTimeout(navUnpinTimer);
-        navUnpinTimer = window.setTimeout(hideNavPinned, delay);
+        navUnpinTimer = window.setTimeout(hideNavShown, delay);
       };
 
       // 遮罩层：播放器展开时显示，点击收起并阻断下层点击（导航栏展开不弹遮罩，导航本身可点）。
@@ -428,15 +427,17 @@ const themedNotFoundRedirectScript = `(() => {
         let navRevealStamp = 0; // 最近一次「唤起」的时间戳（用于隔离同一次点按的 click 余波）
         let navRevealTimer = 0;
 
-        // 点导航栏（圆条或常驻栏）→ 常驻，并打上唤起锁
+        // 点导航栏（圆条或常驻栏）→ 临时唤起（is-nav-shown），并打上唤起锁
         // 注意：圆条 ::before 是 header 的伪元素，点击它 event.target 仍是 header 本身，
         // 故 contains(target) 可靠（伪元素不产生独立 target）。
         document.addEventListener("pointerdown", (event) => {
           const target = event.target instanceof Element ? event.target : null;
           const navHeader = getNavHeader();
           if (!navHeader || !target || !navHeader.contains(target)) return;
-          const wasHidden = !navHeader.classList.contains("is-nav-pinned");
-          showNavPinned();
+          const wasHidden =
+            !navHeader.classList.contains("is-nav-shown") &&
+            !navHeader.classList.contains("is-nav-pinned");
+          showNavShown();
           if (wasHidden) {
             // 从隐藏态唤起：给 header 打上「唤起锁」类，使导航链接在 400ms 内 pointer-events:none，
             // 这样同一次手势的 click 不会命中 <a>，自然阻断 <a> 默认跳转与 ClientRouter（不依赖事件顺序）。
@@ -458,11 +459,12 @@ const themedNotFoundRedirectScript = `(() => {
           if (navRevealStamp && Date.now() - navRevealStamp < 400) return;
           const link = target.closest(".nav-links a, .brand");
           if (link && navHeader.contains(link)) {
-            showNavPinned();
+            showNavShown();
           }
         });
 
-        // 点页面别处（非导航栏、非播放器）→ 收起导航
+        // 点页面别处（非导航栏、非播放器）→ 收起「临时唤起」；
+        // 但首页「滚到底常驻」（is-nav-pinned）是强状态，点别处不收。
         document.addEventListener("pointerdown", (event) => {
           const target = event.target instanceof Element ? event.target : null;
           if (!target) return;
@@ -470,25 +472,25 @@ const themedNotFoundRedirectScript = `(() => {
           const toyDock = getToyDock();
           if (navHeader?.contains(target)) return;
           if (toyDock?.contains(target)) return;
-          hideNavPinned();
+          if (navHeader?.classList.contains("is-nav-pinned")) return;
+          hideNavShown();
         });
       }
 
       // 切页后：短暂常驻（让用户看到到达目标页），随后上拉收起。
+      // 同时清除旧首页的「滚动常驻」（is-nav-pinned），避免 persist 的 header 把状态带到新页面；
+      // 若新页面是首页，其 syncNavPin 会在初始化时按需重新加回 is-nav-pinned。
       document.addEventListener("astro:page-load", () => {
         if (!navTouchCapable) return;
-        // 切页即清除旧首页的「滚动常驻」标记，避免 persist 的 header 把状态带到新页面；
-        // 若新页面是首页，其 syncNavPin 会在初始化时按需重新加回。
-        getNavHeader()?.classList.remove("is-scroll-pinned");
-        // 新页面浮现：先常驻，短暂后收起
-        showNavPinned();
-        unpinNavSoon(600);
+        getNavHeader()?.classList.remove("is-nav-pinned");
+        showNavShown();
+        hideNavSoon(600);
       });
       document.addEventListener("astro:after-swap", () => {
         if (!navTouchCapable) return;
-        getNavHeader()?.classList.remove("is-scroll-pinned");
-        showNavPinned();
-        unpinNavSoon(600);
+        getNavHeader()?.classList.remove("is-nav-pinned");
+        showNavShown();
+        hideNavSoon(600);
       });
 
       // ===== Live2D 看板娘：已卸载（2026-09-25 起停用，代码保留可恢复）=====

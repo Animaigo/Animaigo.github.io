@@ -1660,6 +1660,7 @@ html[data-color-mode="dark"] .quick-action--mode {
 
 .site-header:hover,
 .site-header:focus-within,
+.site-header.is-nav-shown,
 .site-header.is-nav-pinned {
   top: 0;
 }
@@ -5634,12 +5635,14 @@ html[data-yuimi-performance="lite"] #waifu.is-summoned {
     top: -78px;
   }
 
-  /* 移动端禁用 hover/focus 显隐，只由 JS 的 is-nav-pinned 控制（避免点按后 focus 残留钉住） */
+  /* 移动端禁用 hover/focus 显隐，只由 JS 的 is-nav-shown / is-nav-pinned 控制（避免点按后 focus 残留钉住） */
   .site-header:hover,
   .site-header:focus-within {
     top: -78px;
   }
 
+  /* 两个独立类都让导航常驻：is-nav-shown=点圆条临时唤起，is-nav-pinned=首页滚到底常驻 */
+  .site-header.is-nav-shown,
   .site-header.is-nav-pinned {
     top: 0;
   }
