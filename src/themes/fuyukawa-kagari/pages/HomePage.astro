@@ -1469,6 +1469,13 @@ const fallingTags = [
     const syncNavPin = () => {
       navPinFrame = 0;
       if (!siteHeader || !homeContentBg) return;
+      // 离开首页后，缓存的 homeContentBg 已脱离文档（isConnected=false），
+      // 其 getBoundingClientRect().top 会返回 0（≤60 恒真），会误把导航栏钉住常驻。
+      // 故这里一旦发现脱离文档，就立即清除常驻态并停止后续同步。
+      if (!homeContentBg.isConnected) {
+        siteHeader.classList.remove("is-nav-pinned");
+        return;
+      }
       // 取消隐藏的触发点上移一个滚轮格（约 60px）：下半区还差 60px 到顶就把导航常驻
       const scrolledToBottom = homeContentBg.getBoundingClientRect().top <= 60;
       siteHeader.classList.toggle("is-nav-pinned", scrolledToBottom);
@@ -1477,6 +1484,18 @@ const fallingTags = [
       if (navPinFrame) return;
       navPinFrame = window.requestAnimationFrame(syncNavPin);
     };
+
+    // 切页（含离开首页）时，必须清理 syncNavPin 的 scroll 监听，否则残留监听会在新页面
+    // 继续往 persist 的 header 上写 is-nav-pinned，导致「切页后导航栏不收回了」。
+    // 依赖 astro:before-swap 在 DOM 替换前触发，比 rerun 脚本开头的 __yuimiHeroCleanup
+    // （只在再次进入首页时才触发）更及时。
+    const onBeforeSwap = () => {
+      window.__yuimiHeroCleanup?.();
+    };
+    document.addEventListener("astro:before-swap", onBeforeSwap);
+    heroCleanupTasks.push(() => {
+      document.removeEventListener("astro:before-swap", onBeforeSwap);
+    });
 
     if (siteHeader && homeContentBg) {
       syncNavPin();
