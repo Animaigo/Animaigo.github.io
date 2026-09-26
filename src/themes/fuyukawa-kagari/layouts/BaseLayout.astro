@@ -423,6 +423,7 @@ const themedNotFoundRedirectScript = `(() => {
       // 因此用「唤起锁」：唤起后短暂窗口内忽略来自同一手势的 click，避免竞争。
       if (navTouchCapable) {
         let navRevealStamp = 0; // 最近一次「唤起」的时间戳（用于隔离同一次点按的 click 余波）
+        let navRevealTimer = 0;
 
         // 点导航栏（圆条或常驻栏）→ 常驻，并打上唤起锁
         // 注意：圆条 ::before 是 header 的伪元素，点击它 event.target 仍是 header 本身，
@@ -434,8 +435,14 @@ const themedNotFoundRedirectScript = `(() => {
           const wasHidden = !navHeader.classList.contains("is-nav-pinned");
           showNavPinned();
           if (wasHidden) {
-            // 从隐藏态唤起：锁住后续 click，防止上抬后链接位移到手指下方误跳页
+            // 从隐藏态唤起：给 header 打上「唤起锁」类，使导航链接在 400ms 内 pointer-events:none，
+            // 这样同一次手势的 click 不会命中 <a>，自然阻断 <a> 默认跳转与 ClientRouter（不依赖事件顺序）。
             navRevealStamp = Date.now();
+            navHeader.classList.add("is-nav-revealing");
+            window.clearTimeout(navRevealTimer);
+            navRevealTimer = window.setTimeout(() => {
+              navHeader.classList.remove("is-nav-revealing");
+            }, 400);
           }
         });
 

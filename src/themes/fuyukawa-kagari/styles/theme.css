@@ -5644,6 +5644,12 @@ html[data-yuimi-performance="lite"] #waifu.is-summoned {
     top: 0;
   }
 
+  /* 唤起锁：导航栏刚从隐藏态唤起后 400ms 内，链接不可点，
+     避免同一次手势上抬后链接位移到手指下方误触发跳页 */
+  .site-header.is-nav-revealing a {
+    pointer-events: none;
+  }
+
   .has-page-surface main {
     padding-top: 0;
   }
