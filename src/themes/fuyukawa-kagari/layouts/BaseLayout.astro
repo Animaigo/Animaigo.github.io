@@ -417,15 +417,17 @@ const themedNotFoundRedirectScript = `(() => {
         let navRevealStamp = 0; // 最近一次「唤起」的时间戳（用于隔离同一次点按的 click 余波）
 
         // 判定一次点按是否落在「导航栏可点区域」：
-        // 隐藏态下圆条(::before, bottom:-14px)越出 header 盒子，故用坐标扩展 16px 兜底。
+        // 隐藏态 header top:-78px，其底部 + 圆条(::before, bottom:-14px, 高6px)露在屏幕顶部。
+        // header 实际高度随设备/字体变化（实测 80~96px），故用 rect.bottom 动态跟随，
+        // 再往下留 24px 余量覆盖圆条（圆条底边在 rect.bottom+14，+24 稳妥）。
         const hitNavArea = (clientX, clientY) => {
           const navHeader = getNavHeader();
           if (!navHeader) return false;
           const rect = navHeader.getBoundingClientRect();
-          const expand = navHeader.classList.contains("is-nav-pinned") ? 0 : 16;
+          const expand = navHeader.classList.contains("is-nav-pinned") ? 0 : 24;
           return (
-            clientX >= rect.left - expand &&
-            clientX <= rect.right + expand &&
+            clientX >= rect.left &&
+            clientX <= rect.right &&
             clientY >= rect.top - expand &&
             clientY <= rect.bottom + expand
           );
