@@ -409,33 +409,59 @@ const themedNotFoundRedirectScript = `(() => {
       // - 点导航栏（隐藏态露出的圆条，或常驻态）→ 常驻
       // - 点导航链接 → 切页；新页面浮现后短暂常驻再上拉收起
       // - 点遮罩外/页面别处 → 收起（隐藏）
+      //
+      // 关键：唤起（pointerdown 上抬）与跳页/收起（click 命中）是同一次点按的两个阶段，
+      // 若不做隔离，上抬后链接/内容位移到手指下方，会误触发跳页或立即收起。
+      // 因此用「唤起锁」：唤起后短暂窗口内忽略来自同一手势的 click，避免竞争。
       if (navCoarse.matches) {
-        document.addEventListener("pointerdown", (event) => {
-          const target = event.target instanceof Element ? event.target : null;
+        let navRevealStamp = 0; // 最近一次「唤起」的时间戳（用于隔离同一次点按的 click 余波）
+
+        // 判定一次点按是否落在「导航栏可点区域」：
+        // 隐藏态下圆条(::before, bottom:-14px)越出 header 盒子，故用坐标扩展 16px 兜底。
+        const hitNavArea = (clientX, clientY) => {
           const navHeader = getNavHeader();
-          if (!navHeader || !target || !navHeader.contains(target)) return;
-          // 点在导航栏上 → 常驻
+          if (!navHeader) return false;
+          const rect = navHeader.getBoundingClientRect();
+          const expand = navHeader.classList.contains("is-nav-pinned") ? 0 : 16;
+          return (
+            clientX >= rect.left - expand &&
+            clientX <= rect.right + expand &&
+            clientY >= rect.top - expand &&
+            clientY <= rect.bottom + expand
+          );
+        };
+
+        // 点导航栏（圆条或常驻栏）→ 常驻，并打上唤起锁
+        document.addEventListener("pointerdown", (event) => {
+          if (!hitNavArea(event.clientX, event.clientY)) return;
+          const navHeader = getNavHeader();
+          const wasHidden = !navHeader?.classList.contains("is-nav-pinned");
           showNavPinned();
+          if (wasHidden) {
+            // 从隐藏态唤起：锁住后续 click，防止上抬后链接位移到手指下方误跳页
+            navRevealStamp = Date.now();
+          }
         });
-        // 点导航链接：记录切页，页面浮现后短暂常驻再收起。
+
+        // 点导航链接 → 交给 Astro 路由跳转；page-load 后做短暂常驻。
         document.addEventListener("click", (event) => {
           const target = event.target instanceof Element ? event.target : null;
           const navHeader = getNavHeader();
           if (!navHeader || !target) return;
+          // 唤起锁生效期间（同一手势刚唤起的余波）忽略这次 click，避免误跳页
+          if (navRevealStamp && Date.now() - navRevealStamp < 400) return;
           const link = target.closest(".nav-links a, .brand");
           if (link && navHeader.contains(link)) {
-            // 交给 Astro 路由跳转；page-load 后做短暂常驻。
             showNavPinned();
           }
         });
+
         // 点页面别处（非导航栏、非播放器）→ 收起导航
         document.addEventListener("pointerdown", (event) => {
-          const target = event.target instanceof Element ? event.target : null;
-          if (!target) return;
           const navHeader = getNavHeader();
           const toyDock = getToyDock();
-          if (navHeader?.contains(target)) return;
-          if (toyDock?.contains(target)) return;
+          if (hitNavArea(event.clientX, event.clientY)) return;
+          if (toyDock && event.target instanceof Element && toyDock.contains(event.target)) return;
           hideNavPinned();
         });
       }
