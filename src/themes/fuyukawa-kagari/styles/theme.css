@@ -1686,7 +1686,9 @@ html[data-color-mode="dark"] .quick-action--mode {
 }
 
 .site-header:hover::before,
-.site-header:focus-within::before {
+.site-header:focus-within::before,
+.site-header.is-nav-shown::before,
+.site-header.is-nav-pinned::before {
   background: rgba(159, 200, 235, 0.52);
   box-shadow:
     0 0 0 4px rgba(255, 255, 255, 0.38),
