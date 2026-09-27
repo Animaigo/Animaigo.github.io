@@ -2445,6 +2445,19 @@ html[data-color-mode="dark"] .quick-action--mode {
   line-height: 1.1;
 }
 
+.home-notice-subtitle {
+  display: inline-block;
+  margin-top: 6px;
+  color: rgba(215, 130, 156, 0.85);
+  font-size: 0.86rem;
+  font-weight: 760;
+  letter-spacing: 0.02em;
+}
+
+.home-notice-subtitle:empty {
+  display: none;
+}
+
 .home-notice-body {
   display: grid;
   gap: 12px;
@@ -2503,14 +2516,143 @@ html[data-color-mode="dark"] .quick-action--mode {
 }
 
 .home-notice-skip {
-  display: inline-flex;
+  display: flex;
   gap: 8px;
   align-items: center;
-  margin-top: 16px;
-  color: rgba(64, 86, 114, 0.78);
-  font-size: 0.92rem;
-  font-weight: 820;
+  margin-top: 14px;
+  color: rgba(64, 86, 114, 0.62);
+  font-size: 0.88rem;
+  font-weight: 700;
+  line-height: 1;
   cursor: pointer;
+  user-select: none;
+}
+
+.home-notice-switch {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  width: fit-content;
+  margin-top: 18px;
+  padding: 9px 16px;
+  border: 1px solid rgba(159, 200, 235, 0.42);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(159, 200, 235, 0.22), rgba(215, 130, 156, 0.16));
+  color: #405672;
+  font-size: 0.88rem;
+  line-height: 1;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.home-notice-switch:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(159, 200, 235, 0.28);
+  background: linear-gradient(135deg, rgba(159, 200, 235, 0.34), rgba(215, 130, 156, 0.26));
+}
+
+.home-notice-switch:active {
+  transform: translateY(0);
+}
+
+.home-notice-poem {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+}
+
+.home-notice-poem-text {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  margin-top: 14px;
+  font-size: 1.06rem;
+  line-height: 1.9;
+  letter-spacing: 0.05em;
+  color: rgba(64, 86, 114, 0.94) !important;
+}
+
+.home-notice-poem-line {
+  display: block;
+}
+
+.home-notice-poem-credit {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  justify-content: center;
+  margin-bottom: 6px;
+  color: rgba(64, 86, 114, 0.66);
+  font-size: 0.92rem;
+}
+
+.home-notice-poem-credit strong {
+  color: #405672;
+  font-size: 1.24rem;
+  font-weight: 820;
+}
+
+/* 词牌（含「·」的长短句）左对齐排版，更贴近词牌阅读习惯 */
+.home-notice-poem.is-ci {
+  justify-items: start;
+  text-align: left;
+}
+
+.home-notice-poem.is-ci .home-notice-poem-text {
+  justify-items: start;
+  line-height: 2.05;
+}
+
+.home-notice-poem.is-ci .home-notice-poem-credit {
+  justify-content: flex-start;
+}
+
+/* 公告内容切换动画（内层 body） */
+.home-notice-body.is-switching-out {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.home-notice-body.is-switching-in {
+  animation: notice-fade-in 0.3s ease;
+}
+
+@keyframes notice-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 公告切换动画（外层 modal 框） */
+.home-notice-modal.is-switching-out {
+  opacity: 0.72;
+  transform: translateY(0) scale(0.985) rotate(-0.6deg);
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.home-notice-modal.is-switching-in {
+  animation: notice-modal-pop 0.3s cubic-bezier(0.22, 1.28, 0.36, 1);
+}
+
+@keyframes notice-modal-pop {
+  from {
+    opacity: 0.72;
+    transform: translateY(0) scale(0.985) rotate(-0.6deg);
+  }
+  60% {
+    transform: translateY(0) scale(1.01) rotate(-0.6deg);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(-0.6deg);
+  }
 }
 
 .home-notice-skip input {

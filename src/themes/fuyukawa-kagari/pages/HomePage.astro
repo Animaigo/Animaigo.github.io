@@ -99,9 +99,11 @@ const fallingTags = [
           <div>
             <p data-notice-date>Today</p>
             <h2 id="home-notice-title" data-notice-title>Mikan KenkyuuSho 今日公告</h2>
+            <span class="home-notice-subtitle" data-notice-subtitle></span>
           </div>
         </div>
         <div class="home-notice-body" data-notice-body></div>
+        <button class="home-notice-switch" type="button" data-notice-switch aria-label="切换公告模式">换一种：看看历史上的今天</button>
         <label class="home-notice-skip">
           <input type="checkbox" data-notice-skip />
           <span>今日不再弹出</span>
@@ -163,100 +165,162 @@ const fallingTags = [
       const scrollArea = document.querySelector("[data-notice-scroll-area]");
       const closeButton = document.querySelector("[data-notice-close]");
       const skipInput = document.querySelector("[data-notice-skip]");
+      const switchButton = document.querySelector("[data-notice-switch]");
       const titleTarget = document.querySelector("[data-notice-title]");
+      const subtitleTarget = document.querySelector("[data-notice-subtitle]");
       const dateTarget = document.querySelector("[data-notice-date]");
       const iconTarget = document.querySelector("[data-notice-icon]");
       const bodyTarget = document.querySelector("[data-notice-body]");
       const scrollBar = document.querySelector("[data-notice-scrollbar]");
       const scrollThumb = document.querySelector("[data-notice-scroll-thumb]");
-      if (!trigger || !backdrop || !modal || !scrollArea || !closeButton || !skipInput || !titleTarget || !dateTarget || !iconTarget || !bodyTarget) return;
+      if (!trigger || !backdrop || !modal || !scrollArea || !closeButton || !skipInput || !titleTarget || !subtitleTarget || !dateTarget || !iconTarget || !bodyTarget || !switchButton) return;
 
       const noticeData = JSON.parse(document.getElementById("notice-content-data")?.textContent || "{}");
       const formatKey = (date) => `${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
       const formatStorageKey = (date) => `${date.getFullYear()}-${formatKey(date)}`;
-      const pickFrom = (items, index) => items[index % items.length];
       const today = new Date();
       const todayKey = formatKey(today);
       const storageKey = `yuimi-notice-hidden-${formatStorageKey(today)}`;
       const sessionStorageKey = `yuimi-notice-opened-session-${formatStorageKey(today)}`;
       let lockedScrollY = 0;
 
-      const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 86400000);
-      const weekSeed = Math.floor(dayOfYear / 7) + today.getFullYear() * 53;
-      const solarTermEntries = (noticeData.solarTerms2026 || []).map(([date, title, text]) => ({
-        date,
-        icon: "🌿",
-        title,
-        tone: "solar",
-        lines: [text]
-      }));
-      const historyEntries = (noticeData.histories || []).map(([date, icon, text]) => ({
-        date,
-        icon,
-        title: "今天的趣味历史",
-        tone: "history",
-        lines: [text]
-      }));
-      const createFallbackEntry = () => {
-        const themes = noticeData.fallbackThemes || [["💌", "今日小公告", "今天没有撞上特别节日，那就把普通日子当成隐藏关卡。"]];
-        const actions = noticeData.fallbackActions || ["领取一份随机精神补丁。"];
-        const theme = themes[(dayOfYear - 1) % themes.length];
-        return {
-          icon: theme[0],
-          title: `第 ${dayOfYear} 号历史趣味胶囊`,
-          tone: "history",
-          lines: [theme[2], `今天的随机行动：${actions[(dayOfYear - 1) % actions.length]}`],
-          footnote: "没有撞上固定节日时，Mikan KenkyuuSho 会按日期投递不同的冷知识胶囊。"
-        };
+      // ===== 农历 + 节气 + 古诗词 ↔ 历史上的今天 双模式 =====
+      const yearKey = String(today.getFullYear());
+      const lunarTable = noticeData.lunar2025_2030 || {};
+      const lunarOfYear = lunarTable[yearKey] || {};
+      const lunarName = lunarOfYear[todayKey] || "";
+      const solarTermsOfYear = noticeData.solarTerms2025_2030 || {};
+      const solarTermsList = solarTermsOfYear[yearKey] || [];
+      const todayTerm = solarTermsList.find(([date]) => date === todayKey);
+      const termName = todayTerm ? todayTerm[1] : "";
+      const poems = noticeData.lunarPoems || [];
+      const histories = noticeData.todayInHistory || [];
+      const todayHistories = histories.filter(([date]) => date === todayKey);
+
+      // 随机抽一首古诗词（每次打开/切换随机换一首）
+      const randomPick = (arr) => (arr.length ? arr[Math.floor(Math.random() * arr.length)] : null);
+
+      // 按句读标点把诗词正文拆成行，保留句末标点
+      const splitPoemLines = (text) =>
+        String(text || "")
+          .replace(/([，。？！；：])/g, "$1\n")
+          .split("\n")
+          .map((s) => s.trim())
+          .filter(Boolean);
+
+      const poem = randomPick(poems);
+
+      // 模式 A：农历 + 节气 + 古诗词
+      const lunarTitle = [lunarName, termName].filter(Boolean).join(" · ");
+      const renderLunarMode = () => {
+        iconTarget.textContent = termName ? "🍃" : "🌙";
+        titleTarget.textContent = lunarTitle || "今日农历";
+        subtitleTarget.textContent = "每日随机一首古诗词";
+        modal.dataset.tone = "solar";
+        dateTarget.textContent = new Intl.DateTimeFormat("zh-CN", {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          weekday: "long"
+        }).format(today);
+        if (poem) {
+          const poemLines = splitPoemLines(poem[2]);
+          const isCi = poem[0].includes("·");
+          bodyTarget.innerHTML = `
+            <article class="home-notice-entry is-primary home-notice-poem ${isCi ? "is-ci" : ""}">
+              <div class="home-notice-poem-credit">
+                <strong>《${poem[0]}》</strong>
+                <span>${poem[1]}</span>
+              </div>
+              <div class="home-notice-poem-text">
+                ${poemLines.map((line) => `<span class="home-notice-poem-line">${line}</span>`).join("")}
+              </div>
+            </article>`;
+        } else {
+          bodyTarget.innerHTML = `<article class="home-notice-entry is-primary"><p>今日没有抽到诗词，就好好过普通的一天吧。</p></article>`;
+        }
+        if (switchButton) switchButton.textContent = "换一种：看看历史上的今天";
       };
-      const createThursdayV50Entry = () => {
-        const pool = noticeData.v50;
-        if (!pool || today.getDay() !== 4) return null;
-        const opener = pickFrom(pool.openers, weekSeed);
-        const plot = pickFrom(pool.plots, weekSeed * 3 + dayOfYear);
-        const ask = pickFrom(pool.asks, weekSeed * 5 + today.getMonth());
-        const ending = pickFrom(pool.endings, weekSeed * 7 + today.getDate());
-        return {
-          icon: "🍗",
-          title: "星期四 V50 电波",
-          tone: "fun",
-          lines: [`${opener}${plot}。${ask}`, ending],
-          footnote: "V50 文案由素材池按周组合生成，版本数很多，但钱包仍有最终解释权。"
-        };
+
+      // 模式 B：历史上的今天
+      const renderHistoryMode = () => {
+        iconTarget.textContent = "📅";
+        titleTarget.textContent = "历史上的今天";
+        subtitleTarget.textContent = "";
+        modal.dataset.tone = "history";
+        dateTarget.textContent = new Intl.DateTimeFormat("zh-CN", {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          weekday: "long"
+        }).format(today);
+        if (todayHistories.length) {
+          bodyTarget.innerHTML = todayHistories.map(([, icon, text]) => `
+            <article class="home-notice-entry is-primary">
+              <div class="home-notice-entry-title">
+                <span aria-hidden="true">${icon}</span>
+                <strong>历史上的今天</strong>
+              </div>
+              <p>${text}</p>
+            </article>`).join("");
+        } else {
+          bodyTarget.innerHTML = `<article class="home-notice-entry is-primary"><p>这一天暂时没有收录有趣的旧闻，但今天本身就值得被记住。</p></article>`;
+        }
+        if (switchButton) switchButton.textContent = "换一种：回到农历 · 节气 · 诗词";
       };
 
-      const todayEntries = [
-        ...(noticeData.festivals || []).filter((item) => item.date === todayKey),
-        ...solarTermEntries.filter((item) => item.date === todayKey),
-        ...historyEntries.filter((item) => item.date === todayKey)
-      ];
-      const thursdayV50 = createThursdayV50Entry();
-      if (thursdayV50) todayEntries.push(thursdayV50);
+      // 默认渲染模式 A；切换状态存 localStorage，但每次打开默认回到 A（除非已切到 B）
+      let noticeMode = "lunar";
+      const modeStorageKey = `yuimi-notice-mode-${formatStorageKey(today)}`;
+      try {
+        const savedMode = localStorage.getItem(modeStorageKey);
+        if (savedMode === "history") noticeMode = "history";
+      } catch {
+        // Ignore storage failures.
+      }
 
-      const entries = todayEntries.length > 0 ? todayEntries : [createFallbackEntry()];
+      const applyMode = () => {
+        if (noticeMode === "history") {
+          renderHistoryMode();
+        } else {
+          renderLunarMode();
+        }
+      };
+      applyMode();
 
-      const primary = entries[0];
-      iconTarget.textContent = primary.icon;
-      titleTarget.textContent = primary.title;
-      dateTarget.textContent = new Intl.DateTimeFormat("zh-CN", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        weekday: "long"
-      }).format(today);
-      modal.dataset.tone = primary.tone || "soft";
+      // 切换动画：外层框 + 内容一起先淡出，再淡入新内容
+      const switchWithAnimation = () => {
+        modal.classList.add("is-switching-out");
+        bodyTarget.classList.add("is-switching-out");
+        const finish = () => {
+          applyMode();
+          modal.classList.remove("is-switching-out");
+          bodyTarget.classList.remove("is-switching-out");
+          modal.classList.add("is-switching-in");
+          bodyTarget.classList.add("is-switching-in");
+          requestAnimationFrame(() => requestAnimationFrame(updateNoticeScrollbar));
+          window.setTimeout(() => {
+            modal.classList.remove("is-switching-in");
+            bodyTarget.classList.remove("is-switching-in");
+          }, 320);
+        };
+        window.setTimeout(finish, 160);
+      };
 
-      bodyTarget.innerHTML = entries.map((entry, index) => `
-        <article class="home-notice-entry ${index === 0 ? "is-primary" : ""}">
-          <div class="home-notice-entry-title">
-            <span aria-hidden="true">${entry.icon}</span>
-            <strong>${entry.title}</strong>
-          </div>
-          ${entry.lines.map((line) => `<p>${line}</p>`).join("")}
-          ${entry.list ? `<ol>${entry.list.map((item) => `<li>${item}</li>`).join("")}</ol>` : ""}
-          ${entry.footnote ? `<small>${entry.footnote}</small>` : ""}
-        </article>
-      `).join("");
+      const toggleNoticeMode = () => {
+        noticeMode = noticeMode === "lunar" ? "history" : "lunar";
+        try {
+          localStorage.setItem(modeStorageKey, noticeMode);
+        } catch {
+          // Ignore storage failures.
+        }
+        switchWithAnimation();
+      };
+      if (switchButton) switchButton.addEventListener("click", toggleNoticeMode);
+      noticeCleanupTasks.push(() => {
+        if (switchButton) switchButton.removeEventListener("click", toggleNoticeMode);
+      });
+      // ===== 新增逻辑结束 =====
 
       const updateNoticeScrollbar = () => {
         if (!scrollBar || !scrollThumb) return;
