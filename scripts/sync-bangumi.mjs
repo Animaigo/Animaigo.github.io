@@ -45,7 +45,7 @@ if (!uid && !fromFiles.length) {
   console.error('  cd "C:\\Users\\luosh\\Documents\\ChatGPT\\Codx project\\fuyukawa-blog"');
   console.error("  npm run sync:bangumi -- <uid>");
   console.error("提示 3: 如果 Node 走代理仍失败，用 curl 存成文件再离线解析：");
-  console.error('  curl.exe -x http://127.0.0.1:7890 -A "mikan-fuyukawa-blog/0.1" "https://api.bgm.tv/user/<uid>/collection?cat=anime" -o bgm.json');
+  console.error('  curl.exe -x http://127.0.0.1:7890 -A "mikan-fuyukawa-blog/0.1" "https://api.bgm.tv/user/<uid>/collection?cat=all" -o bgm.json');
   console.error('  node "...\\sync-bangumi.mjs" --from-file=bgm.json');
   console.error("可选参数: --all-covers 下载全部封面 / --no-covers 不下载 / --dry-run 只解析不写文件");
   process.exit(1);
@@ -64,12 +64,28 @@ const request = async (url) => {
   return response.json();
 };
 
+// 带重试的请求：Node 的 undici 走代理访问 bgm.tv 偶尔 TLS 握手被断，重试可显著降低失败率
+async function requestWithRetry(url, attempts = 4) {
+  let lastError;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await request(url);
+    } catch (error) {
+      lastError = error;
+      if (i < attempts - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 1500 * (i + 1)));
+      }
+    }
+  }
+  throw lastError;
+}
+
 async function fetchV0Collections(userId) {
   const items = [];
   let offset = 0;
   let total = Number.POSITIVE_INFINITY;
   while (offset < total) {
-    const page = await request(
+    const page = await requestWithRetry(
       `https://api.bgm.tv/v0/users/${encodeURIComponent(userId)}/collections` +
         `?subject_type=${SUBJECT_TYPE_ANIME}&limit=${PAGE_SIZE}&offset=${offset}`
     );
@@ -83,7 +99,9 @@ async function fetchV0Collections(userId) {
 }
 
 async function fetchLegacyCollections(userId) {
-  const data = await request(`https://api.bgm.tv/user/${encodeURIComponent(userId)}/collection?cat=anime`);
+  // 旧版接口的 cat 参数是收藏状态筛选（watching/all/wish/collect/on_hold/dropped），
+  // 传 "anime" 是无效值，接口会默认只回「想看」分类。正确做法是 cat=all 拿全部。
+  const data = await request(`https://api.bgm.tv/user/${encodeURIComponent(userId)}/collection?cat=all`);
   return Array.isArray(data) ? data : [];
 }
 
