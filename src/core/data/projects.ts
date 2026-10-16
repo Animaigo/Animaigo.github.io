@@ -35,17 +35,17 @@ export const projectTechLines: Array<{
 ];
 
 export const projectEntries: ProjectEntry[] = [
-  // 例：
-  // {
-  //   id: "monthly-diary",
-  //   title: "每月手账",
-  //   summary: "把值得记住的日常按月收进同一页。",
-  //   detail: "月度小结、照片与碎片、本月推荐……",
-  //   status: "持续更新",
-  //   year: "2026",
-  //   tags: ["Astro", "数据驱动"],
-  //   image: "/themes/fuyukawa-kagari/assets/hero-wallpaper.webp",
-  //   size: "wide",
-  //   links: [{ label: "GitHub", href: "https://github.com/Animaigo" }]
-  // }
+  {
+    id: "textbook-knowledgebase",
+    title: "教材知识库工具包",
+    summary: "把 OCR 过的教科书 PDF 转成可逐页溯源的 Markdown 原文，让 AI 按书上页码读原文、引原句。",
+    detail:
+      "一个纯 Python 工具包：把 PDF 变成「可逐页溯源的 Markdown 原文」，让 AI 基于它写作，并在交付前逐句回查。校验的是字面一致性——输出的文字是不是课本原文，不保证知识对错，也不改写原文。不限学科，教材、国标、规范、法规都能入库。只含工具，不含任何书籍正文。",
+    status: "工具包",
+    year: "2026",
+    tags: ["Python", "OCR", "知识库", "页码溯源"],
+    image: "/themes/fuyukawa-kagari/assets/project-textbook.webp",
+    size: "wide",
+    links: [{ label: "GitHub", href: "https://github.com/Animaigo/Textbook-knowledgebase" }]
+  }
 ];

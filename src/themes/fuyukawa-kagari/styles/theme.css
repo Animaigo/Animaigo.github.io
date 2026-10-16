@@ -4595,7 +4595,19 @@ html[data-color-mode="dark"] .quick-action--mode {
   grid-auto-rows: 92px;
   gap: 16px;
   width: min(1180px, calc(100% - 32px));
-  margin: 0 auto 72px;
+  margin: 24px auto 72px;
+}
+
+/* 只有一张卡时铺满整行当英雄卡，不孤零零贴在空墙的左边 */
+.mosaic:has(> .mosaic-card:only-child) {
+  grid-template-columns: minmax(0, 1fr);
+  grid-auto-rows: auto;
+}
+
+.mosaic:has(> .mosaic-card:only-child) .mosaic-card {
+  grid-column: 1 / -1;
+  grid-row: auto;
+  aspect-ratio: 16 / 9;
 }
 
 .mosaic-card {
